@@ -50,12 +50,15 @@ int main(int argc, char* argv[]) try
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-        rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
+
+
         rs2::frame color = data.get_color_frame();
 
+
+       /* rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
         rs2::depth_frame depth_frame = data.get_depth_frame();
         const void* ptr = depth_frame.get_data();
-
+        */
 
 
        /* cout << "Deepth Heiht" << depth_frame.get_height();
@@ -78,7 +81,6 @@ int main(int argc, char* argv[]) try
         const int w = color.as<rs2::video_frame>().get_width();
         const int h = color.as<rs2::video_frame>().get_height();
 
-
         // Create OpenCV matrix of size (w,h) from the colorized depth data
         Mat image(Size(w, h), CV_8UC3, (void*)color.get_data(), Mat::AUTO_STEP);
 
@@ -88,8 +90,8 @@ int main(int argc, char* argv[]) try
 
         detectAndDisplay(image);
 
-        // int c = waitKey(10);
-           //  if ((char)c == 'c') { break; }
+         int c = waitKey(10);
+             if ((char)c == 'c') { break; }
     }
 
     return EXIT_SUCCESS;
@@ -117,26 +119,21 @@ void detectAndDisplay(Mat frame)
     equalizeHist(frame_gray, frame_gray);
 
     //-- Detect faces
-    face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+    face_cascade.detectMultiScale(frame_gray, faces, 1.5, 5, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+    //face_cascade.detectMultiScale(frame_gray, faces);
+
+    auto scale = 1;
 
     for (size_t i = 0; i < faces.size(); i++)
     {
         Point center(faces[i].x + faces[i].width * 0.5, faces[i].y + faces[i].height * 0.5);
-        ellipse(frame, center, Size(faces[i].width * 0.5, faces[i].height * 0.5), 0, 0, 360, Scalar(255, 0, 255), 4, 8, 0);
+        //ellipse(frame, center, Size(faces[i].width * 0.5, faces[i].height * 0.5), 0, 0, 360, Scalar(255, 0, 255), 4, 8, 0);
+
+        rectangle(frame, Point(cvRound(faces[i].x * scale), cvRound(faces[i].y * scale)), Point(cvRound((faces[i].x +
+            faces[i].width - 1) * scale), cvRound((faces[i].y + faces[i].height - 1) * scale)), Scalar(255, 0, 255), 3, 8, 0);
+    
 
         Mat faceROI = frame_gray(faces[i]);
-        //std::vector<Rect> eyes;
-
-        //-- In each face, detect eyes
-        //eyes_cascade.detectMultiScale(faceROI, eyes, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
-
-       /* for (size_t j = 0; j < eyes.size(); j++)
-        {
-            Point center(faces[i].x + eyes[j].x + eyes[j].width * 0.5, faces[i].y + eyes[j].y + eyes[j].height * 0.5);
-            int radius = cvRound((eyes[j].width + eyes[j].height) * 0.25);
-            circle(frame, center, radius, Scalar(255, 0, 0), 4, 8, 0);
-        }*/
     }
-    //-- Show what you got
     imshow("img", frame);
 }
