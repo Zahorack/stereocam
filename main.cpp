@@ -13,6 +13,12 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/videoio.hpp"
 
+#include <fstream>              // File IO
+#include <iostream>             // Terminal IO
+#include <sstream>              // Stringstreams
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
 
 cv::String face_cascade_name = "haarcascade_frontalface_default.xml";
 
@@ -20,20 +26,24 @@ cv::String face_cascade_name = "haarcascade_frontalface_default.xml";
 using namespace std;
 using namespace cv;
 
+
+// Declare RealSense pipeline, encapsulating the actual device and sensors
+rs2::pipeline pipe;
+
 CascadeClassifier face_cascade;
 //OpenCV(4.3.0) Error: Assertion failed(!empty()) in cv::CascadeClassifier::detectMultiScale, file C : \build\master_winpack - build - win64 - vc14\opencv\modules\objdetect\src\cascadedetect.cpp, line 1689
 
 
-void detectAndDisplay(Mat frame);
+void faceDetection(Mat frame);
+void saveImagesToPng();
 
 int main(int argc, char* argv[]) try
 {
-    //face_cascade.load(face_cascade_name);
+
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
 
-    // Declare RealSense pipeline, encapsulating the actual device and sensors
-    rs2::pipeline pipe;
+
     // Start streaming with default recommended configuration
     pipe.start();
 
@@ -41,30 +51,30 @@ int main(int argc, char* argv[]) try
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
+    // Capture 30 frames to give autoexposure, etc. a chance to settle
 
-    if (!face_cascade.load(face_cascade_name))
-    {
+
+    if (!face_cascade.load(face_cascade_name)) {
         cout << "--(!)Error loading face cascade\n";
-    };
+    }
+
+    for (auto i = 0; i < 30; ++i)
+        pipe.wait_for_frames();
 
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
 
+
         rs2::frame color = data.get_color_frame();
+
+        saveImagesToPng();
 
 
        /* rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
         rs2::depth_frame depth_frame = data.get_depth_frame();
         const void* ptr = depth_frame.get_data();
-        */
-
-
-       /* cout << "Deepth Heiht" << depth_frame.get_height();
-        cout << "Deepth Width" << depth_frame.get_width();
-
-        cout << "Data size" << color.get_data_size();
         */
 
         /* for (auto i = 0; i < color.get_data_size(); i++) {
@@ -75,6 +85,8 @@ int main(int argc, char* argv[]) try
          }*/
 
         //getchar();
+
+    
 
 
         // Query frame size (width and height)
@@ -88,7 +100,7 @@ int main(int argc, char* argv[]) try
         //imshow(window_name, image);
 
 
-        detectAndDisplay(image);
+        faceDetection(image);
 
          int c = waitKey(10);
              if ((char)c == 'c') { break; }
@@ -110,7 +122,7 @@ catch (const std::exception & e)
 }
 
 
-void detectAndDisplay(Mat frame)
+void faceDetection(Mat frame)
 {
     std::vector<Rect> faces;
     Mat frame_gray;
@@ -136,4 +148,25 @@ void detectAndDisplay(Mat frame)
         Mat faceROI = frame_gray(faces[i]);
     }
     imshow("img", frame);
+}
+
+
+
+void saveImagesToPng() {
+
+    for (auto&& frame : pipe.wait_for_frames()) {
+        if (auto vf = frame.as<rs2::video_frame>()) {
+            auto stream = frame.get_profile().stream_type();
+            // Use the colorizer to get an rgb image for the depth stream
+            rs2::colorizer color_map;
+            if (vf.is<rs2::depth_frame>()) vf = color_map.process(frame);
+
+            // Write images to disk
+            std::stringstream png_file;
+            png_file << "rs-save-to-disk-output-" << vf.get_profile().stream_name() << ".png";
+            stbi_write_png(png_file.str().c_str(), vf.get_width(), vf.get_height(),
+                vf.get_bytes_per_pixel(), vf.get_data(), vf.get_stride_in_bytes());
+            std::cout << "Saved " << png_file.str() << std::endl;
+        }
+    }
 }
