@@ -1,2 +1,22 @@
 ﻿  main.cpp
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(124,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=int
+          ]
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(124,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=int
+          ]
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(125,75): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=int
+          ]
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(125,52): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+          with
+          [
+              _Tp=int
+          ]
   stereocam.vcxproj -> C:\Users\oholly.DQI\Documents\Projects\stereocam\x64\Debug\stereocam.exe

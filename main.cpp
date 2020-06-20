@@ -16,10 +16,12 @@
 
 cv::String face_cascade_name = "haarcascade_frontalface_default.xml";
 
+
 using namespace std;
 using namespace cv;
 
 CascadeClassifier face_cascade;
+//OpenCV(4.3.0) Error: Assertion failed(!empty()) in cv::CascadeClassifier::detectMultiScale, file C : \build\master_winpack - build - win64 - vc14\opencv\modules\objdetect\src\cascadedetect.cpp, line 1689
 
 
 void detectAndDisplay(Mat frame);
@@ -40,7 +42,10 @@ int main(int argc, char* argv[]) try
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
 
-
+    if (!face_cascade.load(face_cascade_name))
+    {
+        cout << "--(!)Error loading face cascade\n";
+    };
 
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
@@ -53,10 +58,11 @@ int main(int argc, char* argv[]) try
 
 
 
-        cout << "Deepth Heiht" << depth_frame.get_height();
+       /* cout << "Deepth Heiht" << depth_frame.get_height();
         cout << "Deepth Width" << depth_frame.get_width();
 
         cout << "Data size" << color.get_data_size();
+        */
 
         /* for (auto i = 0; i < color.get_data_size(); i++) {
              for (auto j = 0; j < color.get_height(); j++) {
@@ -65,22 +71,22 @@ int main(int argc, char* argv[]) try
              cout << "\n";
          }*/
 
-        getchar();
+        //getchar();
 
 
         // Query frame size (width and height)
-        const int w = depth.as<rs2::video_frame>().get_width();
-        const int h = depth.as<rs2::video_frame>().get_height();
+        const int w = color.as<rs2::video_frame>().get_width();
+        const int h = color.as<rs2::video_frame>().get_height();
 
 
         // Create OpenCV matrix of size (w,h) from the colorized depth data
         Mat image(Size(w, h), CV_8UC3, (void*)color.get_data(), Mat::AUTO_STEP);
 
         // Update the window with new data
-        imshow(window_name, image);
+        //imshow(window_name, image);
 
 
-        // detectAndDisplay(image);
+        detectAndDisplay(image);
 
         // int c = waitKey(10);
            //  if ((char)c == 'c') { break; }
@@ -101,17 +107,17 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
-/*
+
 void detectAndDisplay(Mat frame)
 {
     std::vector<Rect> faces;
     Mat frame_gray;
 
-    cvtColor(frame, frame_gray, CV_BGR2GRAY);
+    cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
     equalizeHist(frame_gray, frame_gray);
 
     //-- Detect faces
-    face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CV_HAAR_SCALE_IMAGE, Size(30, 30));
+    face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
 
     for (size_t i = 0; i < faces.size(); i++)
     {
@@ -119,10 +125,18 @@ void detectAndDisplay(Mat frame)
         ellipse(frame, center, Size(faces[i].width * 0.5, faces[i].height * 0.5), 0, 0, 360, Scalar(255, 0, 255), 4, 8, 0);
 
         Mat faceROI = frame_gray(faces[i]);
-        std::vector<Rect> eyes;
+        //std::vector<Rect> eyes;
 
+        //-- In each face, detect eyes
+        //eyes_cascade.detectMultiScale(faceROI, eyes, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+
+       /* for (size_t j = 0; j < eyes.size(); j++)
+        {
+            Point center(faces[i].x + eyes[j].x + eyes[j].width * 0.5, faces[i].y + eyes[j].y + eyes[j].height * 0.5);
+            int radius = cvRound((eyes[j].width + eyes[j].height) * 0.25);
+            circle(frame, center, radius, Scalar(255, 0, 0), 4, 8, 0);
+        }*/
     }
     //-- Show what you got
-    //imshow("Image", frame);
+    imshow("img", frame);
 }
-*/
