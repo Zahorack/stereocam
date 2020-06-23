@@ -3,6 +3,7 @@
 
 #include <librealsense2/rs.hpp> // Include RealSense Cross Platform API
 #include <opencv2/opencv.hpp>   // Include OpenCV API
+#include "cv-helpers.h"
 
 #include "opencv2/objdetect/objdetect.hpp"
 #include "opencv2/highgui/highgui.hpp"
@@ -16,6 +17,7 @@
 #include <fstream>              // File IO
 #include <iostream>             // Terminal IO
 #include <sstream>              // Stringstreams
+
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -46,6 +48,7 @@ int main(int argc, char* argv[]) try
 
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
+    rs2::rates_printer printer;
 
 
     // Start streaming with default recommended configuration
@@ -65,22 +68,27 @@ int main(int argc, char* argv[]) try
     for (auto i = 0; i < 20; ++i)
         pipe.wait_for_frames();
 
+
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
-        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+        rs2::frameset data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
 
         
         rs2::frame color = data.get_color_frame();
 
+        static int last_frame_number = 0;
+        if (color.get_frame_number() == last_frame_number)
+            continue;
+        last_frame_number = color.get_frame_number();
+
+
         //if(event from theraml camera)
         //    saveImagesToPng();
-
 
        /* rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
         rs2::depth_frame depth_frame = data.get_depth_frame();
         const void* ptr = depth_frame.get_data();
         */
-
         /* for (auto i = 0; i < color.get_data_size(); i++) {
              for (auto j = 0; j < color.get_height(); j++) {
                  cout << depth_frame.get_distance(i, j)<<"  ";
@@ -95,14 +103,13 @@ int main(int argc, char* argv[]) try
         const int h = color.as<rs2::video_frame>().get_height();
 
         // Create OpenCV matrix of size (w,h) from the colorized depth data
-        Mat image(Size(w, h), CV_8UC3, (void*)color.get_data(), Mat::AUTO_STEP);
+        //Mat image(Size(w, h), CV_8UC3, (void*)color.get_data(), Mat::AUTO_STEP);
+        auto image = frame_to_mat(color);
 
         // Update the window with new data
-        //imshow(window_name, image);
-
+        imshow(window_name, image);
 
         //faceDetection(image);
-
         detectAndDisplay(image);
 
          int c = waitKey(10);
@@ -237,7 +244,7 @@ void detectAndDisplay(Mat frame)
         filename = ssfn.str();
         filenumber++;
 
-        imwrite(filename, gray);
+        imwrite(filename, crop);
 
         Point pt1(faces[ic].x, faces[ic].y); // Display detected faces on main window
         Point pt2((faces[ic].x + faces[ic].height), (faces[ic].y + faces[ic].width));
