@@ -36,7 +36,7 @@ CascadeClassifier face_cascade;
 
 
 void faceDetection(Mat frame);
-void detectAndDisplay(Mat frame);
+void detectAndDisplay(Mat frame, Mat depth);
 void saveImagesToPng();
 
 
@@ -71,10 +71,10 @@ int main(int argc, char* argv[]) try
 
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
-        rs2::frameset data = pipe.wait_for_frames().apply_filter(printer).apply_filter(color_map);
+        rs2::frameset data = pipe.wait_for_frames(); // .apply_filter(printer).apply_filter(color_map);
 
-        
         rs2::frame color = data.get_color_frame();
+        rs2::depth_frame depth_frame = data.get_depth_frame();
 
         static int last_frame_number = 0;
         if (color.get_frame_number() == last_frame_number)
@@ -102,15 +102,22 @@ int main(int argc, char* argv[]) try
         const int w = color.as<rs2::video_frame>().get_width();
         const int h = color.as<rs2::video_frame>().get_height();
 
+       /* std::cout << "Color width: " << color.as<rs2::video_frame>().get_width() << "\n";
+        std::cout << "Color height: " << color.as<rs2::video_frame>().get_height() << "\n";
+        std::cout << "depth_frame width: " << depth_frame.as<rs2::video_frame>().get_width() << "\n";
+        std::cout << "depth_frame height: " << depth_frame.as<rs2::video_frame>().get_height() << "\n";*/
+
         // Create OpenCV matrix of size (w,h) from the colorized depth data
         //Mat image(Size(w, h), CV_8UC3, (void*)color.get_data(), Mat::AUTO_STEP);
+
         auto image = frame_to_mat(color);
+        auto depth_image = frame_to_mat(depth_frame);
 
         // Update the window with new data
-        imshow(window_name, image);
+        //imshow(window_name, image);
 
         //faceDetection(image);
-        detectAndDisplay(image);
+        detectAndDisplay(image, depth_image);
 
          int c = waitKey(10);
              if ((char)c == 'c') { break; }
@@ -181,13 +188,14 @@ void saveImagesToPng() {
     }
 }
 
-void detectAndDisplay(Mat frame)
+void detectAndDisplay(Mat frame, Mat depth)
 {
     std::vector<Rect> faces;
     Mat frame_gray;
-    Mat crop;
+    Mat crop, crop_depth;
     Mat res;
     Mat gray;
+    Mat face_threshold;
     string text;
     stringstream sstm;
 
@@ -234,8 +242,49 @@ void detectAndDisplay(Mat frame)
         }
 
         crop = frame(roi_b);
+        crop_depth = depth(roi_b);
+
+
         resize(crop, res, Size(128, 128), 0, 0, INTER_LINEAR); // This will be needed later while saving images
         cvtColor(crop, gray, COLOR_BGR2GRAY); // Convert cropped image to Grayscale
+
+            /* 0: Binary
+             1: Binary Inverted
+             2: Threshold Truncated
+             3: Threshold to Zero
+             4: Threshold to Zero Inverted
+            */
+
+        //threshold(gray, face_threshold, 50, 255, 1);
+
+        auto closest_point = 65536;
+        for (int y = 0; y < crop_depth.rows; y++) {
+            for (int x = 0; x < crop_depth.cols; x++) {
+                auto dep = crop_depth.at<uint16_t>(y, x);
+
+               //std::cout << dep << " ";
+                if (dep && dep < closest_point)
+                    closest_point = dep;
+            }
+        }
+
+
+        for (int y = 0; y < crop.rows; y++) {
+            for (int x = 0; x < crop.cols; x++) {
+                Vec3b& col = crop.at<Vec3b>(y, x);
+                auto dep = crop_depth.at<uint16_t>(y, x);
+
+                if (dep > (closest_point + 100)) {
+                    col[0] = 255;
+                    col[1] = 255;
+                    col[2] = 255;
+                }
+
+                // set pixel
+                //image.at<Vec3b>(Point(x,y)) = color;
+                //if you copy value
+            }
+        }
 
         // Form a filename
         filename = "faces";
@@ -264,4 +313,11 @@ void detectAndDisplay(Mat frame)
     }
     else
         destroyWindow("detected");
+
+    if (!crop_depth.empty())
+    {
+        imshow("depth_crop", crop_depth);
+    }
+    else
+        destroyWindow("depth_crop");
 }

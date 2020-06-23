@@ -30,10 +30,12 @@ static cv::Mat frame_to_mat(const rs2::frame& f)
     }
     else if (f.get_profile().format() == RS2_FORMAT_Z16)
     {
+        //std::cout << "RS2_FORMAT_Z16" << "\n";
         return Mat(Size(w, h), CV_16UC1, (void*)f.get_data(), Mat::AUTO_STEP);
     }
     else if (f.get_profile().format() == RS2_FORMAT_Y8)
     {
+        //std::cout << "RS2_FORMAT_Y8" << "\n";
         return Mat(Size(w, h), CV_8UC1, (void*)f.get_data(), Mat::AUTO_STEP);
     }
     else if (f.get_profile().format() == RS2_FORMAT_DISPARITY32)
