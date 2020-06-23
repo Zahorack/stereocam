@@ -1,10 +1,10 @@
 ﻿  main.cpp
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(141,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(144,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int
           ]
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(141,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(144,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int

@@ -31,11 +31,15 @@ using namespace cv;
 rs2::pipeline pipe;
 
 CascadeClassifier face_cascade;
-//OpenCV(4.3.0) Error: Assertion failed(!empty()) in cv::CascadeClassifier::detectMultiScale, file C : \build\master_winpack - build - win64 - vc14\opencv\modules\objdetect\src\cascadedetect.cpp, line 1689
 
 
 void faceDetection(Mat frame);
+void detectAndDisplay(Mat frame);
 void saveImagesToPng();
+
+
+auto filenumber = 0;
+string filename;
 
 int main(int argc, char* argv[]) try
 {
@@ -58,18 +62,18 @@ int main(int argc, char* argv[]) try
         cout << "--(!)Error loading face cascade\n";
     }
 
-    for (auto i = 0; i < 30; ++i)
+    for (auto i = 0; i < 20; ++i)
         pipe.wait_for_frames();
 
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
 
-
-
+        
         rs2::frame color = data.get_color_frame();
 
-        saveImagesToPng();
+        //if(event from theraml camera)
+        //    saveImagesToPng();
 
 
        /* rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
@@ -86,9 +90,6 @@ int main(int argc, char* argv[]) try
 
         //getchar();
 
-    
-
-
         // Query frame size (width and height)
         const int w = color.as<rs2::video_frame>().get_width();
         const int h = color.as<rs2::video_frame>().get_height();
@@ -100,7 +101,9 @@ int main(int argc, char* argv[]) try
         //imshow(window_name, image);
 
 
-        faceDetection(image);
+        //faceDetection(image);
+
+        detectAndDisplay(image);
 
          int c = waitKey(10);
              if ((char)c == 'c') { break; }
@@ -169,4 +172,89 @@ void saveImagesToPng() {
             std::cout << "Saved " << png_file.str() << std::endl;
         }
     }
+}
+
+void detectAndDisplay(Mat frame)
+{
+    std::vector<Rect> faces;
+    Mat frame_gray;
+    Mat crop;
+    Mat res;
+    Mat gray;
+    string text;
+    stringstream sstm;
+
+    cvtColor(frame, frame_gray, COLOR_BGR2GRAY);
+    equalizeHist(frame_gray, frame_gray);
+
+    // Detect faces
+    face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+
+    // Set Region of Interest
+    cv::Rect roi_b;
+    cv::Rect roi_c;
+
+    size_t ic = 0; // ic is index of current element
+    int ac = 0; // ac is area of current element
+
+    size_t ib = 0; // ib is index of biggest element
+    int ab = 0; // ab is area of biggest element
+
+    for (ic = 0; ic < faces.size(); ic++) // Iterate through all current elements (detected faces)
+
+    {
+        roi_c.x = faces[ic].x;
+        roi_c.y = faces[ic].y;
+        roi_c.width = (faces[ic].width);
+        roi_c.height = (faces[ic].height);
+
+        ac = roi_c.width * roi_c.height; // Get the area of current element (detected face)
+
+        roi_b.x = faces[ib].x;
+        roi_b.y = faces[ib].y;
+        roi_b.width = (faces[ib].width);
+        roi_b.height = (faces[ib].height);
+
+        ab = roi_b.width * roi_b.height; // Get the area of biggest element, at beginning it is same as "current" element
+
+        if (ac > ab)
+        {
+            ib = ic;
+            roi_b.x = faces[ib].x;
+            roi_b.y = faces[ib].y;
+            roi_b.width = (faces[ib].width);
+            roi_b.height = (faces[ib].height);
+        }
+
+        crop = frame(roi_b);
+        resize(crop, res, Size(128, 128), 0, 0, INTER_LINEAR); // This will be needed later while saving images
+        cvtColor(crop, gray, COLOR_BGR2GRAY); // Convert cropped image to Grayscale
+
+        // Form a filename
+        filename = "faces";
+        stringstream ssfn;
+        ssfn << filename << "/" << filenumber << ".jpg";
+        filename = ssfn.str();
+        filenumber++;
+
+        imwrite(filename, gray);
+
+        Point pt1(faces[ic].x, faces[ic].y); // Display detected faces on main window
+        Point pt2((faces[ic].x + faces[ic].height), (faces[ic].y + faces[ic].width));
+        rectangle(frame, pt1, pt2, Scalar(0, 255, 0), 2, 8, 0);
+    }
+
+    // Show image
+    sstm << "Crop area size: " << roi_b.width << "x" << roi_b.height << " Filename: " << filename;
+    text = sstm.str();
+
+    putText(frame, text, Point(30, 30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 255), 1, LINE_AA);
+    imshow("original", frame);
+
+    if (!crop.empty())
+    {
+        imshow("detected", crop);
+    }
+    else
+        destroyWindow("detected");
 }
