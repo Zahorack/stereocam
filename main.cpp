@@ -19,6 +19,7 @@
 #include <sstream>              // Stringstreams
 
 
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
@@ -36,7 +37,7 @@ CascadeClassifier face_cascade;
 
 
 void faceDetection(Mat frame);
-void detectAndDisplay(Mat frame, Mat depth);
+void detectAndDisplay(rs2::frameset data);
 void saveImagesToPng();
 
 
@@ -117,7 +118,8 @@ int main(int argc, char* argv[]) try
         //imshow(window_name, image);
 
         //faceDetection(image);
-        detectAndDisplay(image, depth_image);
+  
+        detectAndDisplay(data);
 
          int c = waitKey(10);
              if ((char)c == 'c') { break; }
@@ -188,8 +190,21 @@ void saveImagesToPng() {
     }
 }
 
-void detectAndDisplay(Mat frame, Mat depth)
+void detectAndDisplay(rs2::frameset data)
 {
+
+    rs2::frame color = data.get_color_frame();
+    rs2::depth_frame depth_frame = data.get_depth_frame();
+
+    auto frame = frame_to_mat(color);
+    auto depth = frame_to_mat(depth_frame);
+
+    rs2::pointcloud pc;
+    pc.map_to(color);
+    rs2::points points = pc.calculate(depth_frame);
+
+    points.export_to_ply("ply1.ply", color);
+
     std::vector<Rect> faces;
     Mat frame_gray;
     Mat crop, crop_depth;
@@ -215,34 +230,47 @@ void detectAndDisplay(Mat frame, Mat depth)
     size_t ib = 0; // ib is index of biggest element
     int ab = 0; // ab is area of biggest element
 
+
+
+    float scale = 1;
+
     for (ic = 0; ic < faces.size(); ic++) // Iterate through all current elements (detected faces)
-
     {
-        roi_c.x = faces[ic].x;
-        roi_c.y = faces[ic].y;
-        roi_c.width = (faces[ic].width);
-        roi_c.height = (faces[ic].height);
 
-        ac = roi_c.width * roi_c.height; // Get the area of current element (detected face)
+        /*roi_c.x = cvRound(faces[ic].x *scale);
+        roi_c.y = cvRound(faces[ic].y * scale);
+        roi_c.width = cvRound(faces[ic].width * scale);
+        roi_c.height = cvRound(faces[ic].height * scale);
 
-        roi_b.x = faces[ib].x;
-        roi_b.y = faces[ib].y;
-        roi_b.width = (faces[ib].width);
-        roi_b.height = (faces[ib].height);
+        ac = roi_c.width * roi_c.height; // Get the area of current element (detected face)*/
 
-        ab = roi_b.width * roi_b.height; // Get the area of biggest element, at beginning it is same as "current" element
+        roi_b.x = cvRound(faces[ib].x );
+        roi_b.y = cvRound(faces[ib].y );
+        roi_b.width = cvRound(faces[ib].width * scale);
+        roi_b.height = cvRound(faces[ib].height * scale);
+
+      /*  ab = roi_b.width * roi_b.height; // Get the area of biggest element, at beginning it is same as "current" element
 
         if (ac > ab)
         {
             ib = ic;
-            roi_b.x = faces[ib].x;
-            roi_b.y = faces[ib].y;
-            roi_b.width = (faces[ib].width);
-            roi_b.height = (faces[ib].height);
-        }
+            roi_b.x = cvRound(faces[ib].x * scale);
+            roi_b.y = cvRound(faces[ib].y * scale);
+            roi_b.width = cvRound(faces[ib].width * scale);
+            roi_b.height = cvRound(faces[ib].height * scale);
+        }*/
+
+
+
+        if ((roi_b.x + roi_b.width) >= frame.cols)
+            roi_b.width = frame.cols - roi_b.x - 1;
+
+        if ((roi_b.y + roi_b.height) >= frame.rows)
+            roi_b.height = frame.rows - roi_b.y - 1;
 
         crop = frame(roi_b);
         crop_depth = depth(roi_b);
+
 
 
         resize(crop, res, Size(128, 128), 0, 0, INTER_LINEAR); // This will be needed later while saving images
@@ -274,7 +302,8 @@ void detectAndDisplay(Mat frame, Mat depth)
                 Vec3b& col = crop.at<Vec3b>(y, x);
                 auto dep = crop_depth.at<uint16_t>(y, x);
 
-                if (dep > (closest_point + 100)) {
+               if (!dep || dep > (closest_point + 100)) {
+                //if(dep > 500) {
                     col[0] = 255;
                     col[1] = 255;
                     col[2] = 255;
