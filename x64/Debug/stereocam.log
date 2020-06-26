@@ -1,11 +1,11 @@
 ﻿  main.cpp
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(83,51): warning C4244: '=': conversion from 'unsigned __int64' to 'int', possible loss of data
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(160,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(112,51): warning C4244: '=': conversion from 'unsigned __int64' to 'int', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(558,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int
           ]
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(160,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(558,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int

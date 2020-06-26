@@ -18,6 +18,9 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="stereoscan.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore">
@@ -26,6 +29,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cv-helpers.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stereoscan.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
