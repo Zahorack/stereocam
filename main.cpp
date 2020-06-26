@@ -14,9 +14,10 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/videoio.hpp"
 
-#include <fstream>              // File IO
-#include <iostream>             // Terminal IO
-#include <sstream>              // Stringstreams
+#include <fstream>             
+#include <iostream>             
+#include <sstream>              
+#include <algorithm>
 
 
 
@@ -75,75 +76,38 @@ rs2::pipeline_profile profile;
 
 int main(int argc, char* argv[]) try
 {
-
     // Declare depth colorizer for pretty visualization of depth data
     rs2::colorizer color_map;
     rs2::rates_printer printer;
 
-
     // Start streaming with default recommended configuration
     profile = pipe.start();
-
 
     const auto window_name = "Display Image";
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
     // Capture 30 frames to give autoexposure, etc. a chance to settle
-
+    for (auto i = 0; i < 20; ++i)
+        pipe.wait_for_frames();
 
     if (!face_cascade.load(face_cascade_name)) {
         cout << "--(!)Error loading face cascade\n";
     }
-
-    for (auto i = 0; i < 20; ++i)
-        pipe.wait_for_frames();
 
 
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
         rs2::frameset data = pipe.wait_for_frames(); // .apply_filter(printer).apply_filter(color_map);
 
-        rs2::frame color = data.get_color_frame();
-        rs2::depth_frame depth_frame = data.get_depth_frame();
-
         static int last_frame_number = 0;
-        if (color.get_frame_number() == last_frame_number)
+        if (data.get_frame_number() == last_frame_number)
             continue;
-        last_frame_number = color.get_frame_number();
+        last_frame_number = data.get_frame_number();
 
 
         //if(event from theraml camera)
         //    saveImagesToPng();
 
-       /* rs2::frame depth = data.get_depth_frame().apply_filter(color_map);
-        rs2::depth_frame depth_frame = data.get_depth_frame();
-        const void* ptr = depth_frame.get_data();
-        */
-        /* for (auto i = 0; i < color.get_data_size(); i++) {
-             for (auto j = 0; j < color.get_height(); j++) {
-                 cout << depth_frame.get_distance(i, j)<<"  ";
-             }
-             cout << "\n";
-         }*/
-
-        //getchar();
-
-        // Query frame size (width and height)
-        const int w = color.as<rs2::video_frame>().get_width();
-        const int h = color.as<rs2::video_frame>().get_height();
-
-       /* std::cout << "Color width: " << color.as<rs2::video_frame>().get_width() << "\n";
-        std::cout << "Color height: " << color.as<rs2::video_frame>().get_height() << "\n";
-        std::cout << "depth_frame width: " << depth_frame.as<rs2::video_frame>().get_width() << "\n";
-        std::cout << "depth_frame height: " << depth_frame.as<rs2::video_frame>().get_height() << "\n";*/
-
-        // Create OpenCV matrix of size (w,h) from the colorized depth data
-        //Mat image(Size(w, h), CV_8UC3, (void*)color.get_data(), Mat::AUTO_STEP);
-
-        auto image = frame_to_mat(color);
-        auto depth_image = frame_to_mat(depth_frame);
-
-        // Update the window with new data
         //imshow(window_name, image);
 
         //faceDetection(image);
@@ -153,7 +117,6 @@ int main(int argc, char* argv[]) try
          int c = waitKey(10);
              if ((char)c == 'c') { break; }
     }
-
     return EXIT_SUCCESS;
 }
 
@@ -168,8 +131,6 @@ catch (const std::exception & e)
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-
-
 
 
 
@@ -195,19 +156,12 @@ void saveImagesToPng() {
 void detectAndDisplay(rs2::frameset data)
 {
 
-    rs2::frame color_frame = data.get_color_frame();
+    rs2::video_frame color_frame = data.get_color_frame();
     rs2::depth_frame depth_frame = data.get_depth_frame();
 
     auto color_mat = frame_to_mat(color_frame);
     auto depth_mat = frame_to_mat(depth_frame);
 
-
-    rs2::pointcloud pc;
-    pc.map_to(color_frame);
-    rs2::points points = pc.calculate(depth_frame);
-
-    /*Export whole scene*/
-    points.export_to_ply("ply1.ply", color_frame);
 
     std::vector<Rect> faces;
     Mat frame_gray;
@@ -235,122 +189,59 @@ void detectAndDisplay(rs2::frameset data)
     size_t ib = 0; // ib is index of biggest element
     int ab = 0; // ab is area of biggest element
 
-    float scale = 1;
+    float scale = 1.4;
 
     // Iterate through all current detected faces
     for (ic = 0; ic < faces.size(); ic++) {
 
-        /*roi_c.x = cvRound(faces[ic].x *scale);
-        roi_c.y = cvRound(faces[ic].y * scale);
-        roi_c.width = cvRound(faces[ic].width * scale);
-        roi_c.height = cvRound(faces[ic].height * scale);
 
-        ac = roi_c.width * roi_c.height; // Get the area of current element (detected face)*/
+        /*Center of face*/
+        Point center_point(faces[ic].x + faces[ic].width / 2, faces[ic].y + faces[ic].height / 2);
+        auto center_distance = depth_frame.get_distance(center_point.x, center_point.y);
 
-        roi_b.x = cvRound(faces[ib].x );
-        roi_b.y = cvRound(faces[ib].y );
-        roi_b.width = cvRound(faces[ib].width * scale);
-        roi_b.height = cvRound(faces[ib].height * scale);
+        roi_b.width = cvRound(faces[ic].width * scale);
+        roi_b.height = cvRound(faces[ic].height * scale*1.3);
+        roi_b.x = cvRound(center_point.x - roi_b.width /2);
+        roi_b.y = cvRound(center_point.y - roi_b.height /2);
 
 
-        //Advanced ROI implementation
-        /*  ab = roi_b.width * roi_b.height; // Get the area of biggest element, at beginning it is same as "current" element
-
-        if (ac > ab)
-        {
-            ib = ic;
-            roi_b.x = cvRound(faces[ib].x * scale);
-            roi_b.y = cvRound(faces[ib].y * scale);
-            roi_b.width = cvRound(faces[ib].width * scale);
-            roi_b.height = cvRound(faces[ib].height * scale);
-        }
-
-  
-        
         if ((roi_b.x + roi_b.width) >= color_mat.cols)
-            roi_b.width = color_mat.cols - roi_b.x - 1;
+            roi_b.width = color_mat.cols - roi_b.x;
 
         if ((roi_b.y + roi_b.height) >= color_mat.rows)
-            roi_b.height = color_mat.rows - roi_b.y - 1;
+            roi_b.height = color_mat.rows - roi_b.y;
 
-        */
+
+        roi_b.x = clamp<int>(roi_b.x, 0, color_mat.cols-1);
+        roi_b.y = clamp<int>(roi_b.y, 0, color_mat.rows-1);
+        roi_b.width = clamp<int>(roi_b.width, 0, color_mat.cols-1);
+        roi_b.height = clamp<int>(roi_b.height, 0, color_mat.rows-1);
 
         crop_color = color_mat(roi_b);
         crop_depth = depth_mat(roi_b);
 
+
         //SAVE FACE IMAGE
-        filename = "faces";
+        /*filename = "faces";
         stringstream ssfn;
         ssfn << filename << "/" << filenumber << ".jpg";
         filename = ssfn.str();
         filenumber++;
+        imwrite(filename, crop_color);*/
 
-        imwrite(filename, crop_color);
-
-        Point pt1(faces[ic].x, faces[ic].y); // Display detected faces on main window
-        Point pt2((faces[ic].x + faces[ic].height), (faces[ic].y + faces[ic].width));
+        Point pt1(roi_b.x, roi_b.y); // Display detected faces on main window
+        Point pt2((roi_b.x + roi_b.width), (roi_b.y + roi_b.height));
         rectangle(color_mat, pt1, pt2, Scalar(0, 255, 0), 2, 8, 0);
 
 
+
         //NOW 3D SCAN SAVING
-
-        // This will be needed later while saving images and maybe NOT
-        //resize(crop_color, res, Size(128, 128), 0, 0, INTER_LINEAR); 
-
-        //Thresholding of face// NOT SO GOOD
-        //cvtColor(crop, gray, COLOR_BGR2GRAY); // Convert cropped image to Grayscale
-            /* 0: Binary
-             1: Binary Inverted
-             2: Threshold Truncated
-             3: Threshold to Zero
-             4: Threshold to Zero Inverted
-            */
-        //threshold(gray, face_threshold, 50, 255, 1);
-
-
-        /*Center of face*/
-        Point center_point(roi_b.x + crop_depth.rows/2, roi_b.y + crop_depth.cols/2);
-        auto center_distance = depth_frame.get_distance(center_point.x, center_point.y);
-
-        //Compute neareswt point of facce, better use center distance
-        /*
-        auto closest_point = 65536;
-        for (int y = 0; y < crop_depth.rows; y++) {
-            for (int x = 0; x < crop_depth.cols; x++) {
-                auto dep = crop_depth.at<uint16_t>(y, x);
-
-               //std::cout << dep << " ";
-                if (dep && dep < closest_point)
-                    closest_point = dep;
-            }
-        }
-        */
-
-       //Remove color background by distance
-       /* for (int y = 0; y < crop.rows; y++) {
-            for (int x = 0; x < crop.cols; x++) {
-                Vec3b& col = crop.at<Vec3b>(y, x);
-                auto dep = crop_depth.at<uint16_t>(y, x);
-
-               if (!dep || dep > (closest_point + 100)) {
-                //if(dep > 500) {
-                    col[0] = 255;
-                    col[1] = 255;
-                    col[2] = 255;
-                }
-
-                // set pixel
-                //image.at<Vec3b>(Point(x,y)) = color;
-                //if you copy value
-            }
-        }*/
-
         float depth_scale = get_depth_scale(profile.get_device());
         rs2_stream align_to = find_stream_to_align(profile.get_streams());
         rs2::align align(align_to);
 
 
-        float depth_clipping_distance = 1.0;
+        float depth_clipping_distance = center_distance+0.2;
 
         if (profile_changed(pipe.get_active_profile().get_streams(), profile.get_streams()))
         {
@@ -361,7 +252,6 @@ void detectAndDisplay(rs2::frameset data)
             depth_scale = get_depth_scale(profile.get_device());
         }
 
-
         //Get processed aligned frame
         auto processed = align.process(data);
 
@@ -370,60 +260,27 @@ void detectAndDisplay(rs2::frameset data)
         rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
         //If one of them is unavailable, continue iteration
-        if (!aligned_depth_frame || !other_frame)
-        {
+        if (!aligned_depth_frame || !other_frame) {
             continue;
         }
-        // Passing both frames to remove_background so it will "strip" the background
-        // NOTE: in this example, we alter the buffer of the other frame, instead of copying it and altering the copy
-        //       This behavior is not recommended in real application since the other frame could be used elsewhere
         remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance);
 
         rs2::colorizer color_map;
         imshow("aligned", frame_to_mat(other_frame));
 
-        rs2::pointcloud pc2;
-        pc2.map_to(other_frame);
-        rs2::points points2 = pc2.calculate(aligned_depth_frame);
+        rs2::pointcloud pc;
+        pc.map_to(color_frame);
+        rs2::points points = pc.calculate(aligned_depth_frame);
 
-        
+       //points.export_to_ply("ply_aligned.ply", color_frame);
 
-        points2.export_to_ply("ply_aligned.ply", other_frame);
-
-        // Taking dimensions of the window for rendering purposes
-        float w = static_cast<float>(crop_color.rows);
-        float h = static_cast<float>(crop_color.cols);
-
-        // At this point, "other_frame" is an altered frame, stripped form its background
-        // Calculating the position to place the frame in the window
-        rect altered_other_frame_rect{ 0, 0, w, h };
-        altered_other_frame_rect = altered_other_frame_rect.adjust_ratio({ static_cast<float>(other_frame.get_width()),static_cast<float>(other_frame.get_height()) });
-
-        // Render aligned image
-        //renderer.render(other_frame, altered_other_frame_rect);
-
-        // The example also renders the depth frame, as a picture-in-picture
-        // Calculating the position to place the depth frame in the window
-        rect pip_stream{ 0, 0, w / 5, h / 5 };
-        pip_stream = pip_stream.adjust_ratio({ static_cast<float>(aligned_depth_frame.get_width()),static_cast<float>(aligned_depth_frame.get_height()) });
-        pip_stream.x = altered_other_frame_rect.x + altered_other_frame_rect.w - pip_stream.w - (std::max(w, h) / 25);
-        pip_stream.y = altered_other_frame_rect.y + (std::max(w, h) / 25);
-
-        // Render depth (as picture in pipcture)
-       // renderer.upload(c.process(aligned_depth_frame));
-       // renderer.show(pip_stream);
-
-        // Using ImGui library to provide a slide controller to select the depth clipping distance
-       // ImGui_ImplGlfw_NewFrame(1);
-       // render_slider({ 5.f, 0, w, h }, depth_clipping_distance);
-       // ImGui::Render();
     }
 
     // Show image
-    sstm << "Crop area size: " << roi_b.width << "x" << roi_b.height << " Filename: " << filename;
+    /*sstm << "Crop area size: " << roi_b.width << "x" << roi_b.height << " Filename: " << filename;
     text = sstm.str();
-
     putText(color_mat, text, Point(30, 30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 255), 1, LINE_AA);
+    */
     imshow("original", color_mat);
 
     if (!crop_color.empty())
@@ -432,13 +289,6 @@ void detectAndDisplay(rs2::frameset data)
     }
     else
         destroyWindow("detected");
-
-    if (!crop_depth.empty())
-    {
-        imshow("depth_crop", crop_depth);
-    }
-    else
-        destroyWindow("depth_crop");
 }
 
 float get_depth_scale(rs2::device dev)
@@ -496,7 +346,6 @@ rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams)
 void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist)
 {
     const uint16_t* p_depth_frame_to_read = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
-
     uint16_t* p_depth_frame = reinterpret_cast<uint16_t*>(const_cast<void*>(depth_frame.get_data()));
 
     uint8_t* p_other_frame = reinterpret_cast<uint8_t*>(const_cast<void*>(other_frame.get_data()));
@@ -504,12 +353,8 @@ void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& de
     int width = other_frame.get_width();
     int height = other_frame.get_height();
     int other_bpp = other_frame.get_bytes_per_pixel();
-
-
     int deep_bpp = depth_frame.get_bytes_per_pixel();
 
-    std::cout << "other_bpp " << other_bpp << endl;
-    std::cout << "deep_bpp " << deep_bpp << endl;
 
 #pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
     for (int y = 0; y < height; y++)

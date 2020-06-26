@@ -55,3 +55,9 @@ static cv::Mat depth_frame_to_meters(const rs2::depth_frame& f)
     return dm;
 }
 
+template<class T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi)
+{
+    assert(!(hi < lo));
+    return (v <= lo) ? lo : (hi <= v) ? hi : v;
+}
