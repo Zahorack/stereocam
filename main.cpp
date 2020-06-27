@@ -164,7 +164,7 @@ void detectAndDisplay(rs2::frameset data)
 
 
     std::vector<Rect> faces;
-    Mat frame_gray;
+    Mat gray_mat;
     Mat crop_color, crop_depth;
     Mat res;
     Mat gray;
@@ -173,26 +173,20 @@ void detectAndDisplay(rs2::frameset data)
     stringstream sstm;
 
     /*Rgb to gray*/
-    cvtColor(color_mat, frame_gray, COLOR_BGR2GRAY);
-    equalizeHist(frame_gray, frame_gray);
+    cvtColor(color_mat, gray_mat, COLOR_BGR2GRAY);
+    equalizeHist(gray_mat, gray_mat);
 
     // Detect faces
-    face_cascade.detectMultiScale(frame_gray, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
+    face_cascade.detectMultiScale(gray_mat, faces, 1.1, 2, 0 | CASCADE_SCALE_IMAGE, Size(30, 30));
 
     // Set Region of Interest
     cv::Rect roi_b;
-    cv::Rect roi_c;
-
-    size_t ic = 0; // ic is index of current element
-    int ac = 0; // ac is area of current element
-
-    size_t ib = 0; // ib is index of biggest element
-    int ab = 0; // ab is area of biggest element
 
     float scale = 1.4;
+    float height_scale = 1.3;
 
     // Iterate through all current detected faces
-    for (ic = 0; ic < faces.size(); ic++) {
+    for (auto ic = 0; ic < faces.size(); ic++) {
 
 
         /*Center of face*/
@@ -200,7 +194,7 @@ void detectAndDisplay(rs2::frameset data)
         auto center_distance = depth_frame.get_distance(center_point.x, center_point.y);
 
         roi_b.width = cvRound(faces[ic].width * scale);
-        roi_b.height = cvRound(faces[ic].height * scale*1.3);
+        roi_b.height = cvRound(faces[ic].height * scale* height_scale);
         roi_b.x = cvRound(center_point.x - roi_b.width /2);
         roi_b.y = cvRound(center_point.y - roi_b.height /2);
 
@@ -217,10 +211,6 @@ void detectAndDisplay(rs2::frameset data)
         roi_b.width = clamp<int>(roi_b.width, 0, color_mat.cols-1);
         roi_b.height = clamp<int>(roi_b.height, 0, color_mat.rows-1);
 
-        crop_color = color_mat(roi_b);
-        crop_depth = depth_mat(roi_b);
-
-
         Point pt1(roi_b.x, roi_b.y); // Display detected faces on main window
         Point pt2((roi_b.x + roi_b.width), (roi_b.y + roi_b.height));
         rectangle(color_mat, pt1, pt2, Scalar(0, 255, 0), 2, 8, 0);
@@ -232,7 +222,7 @@ void detectAndDisplay(rs2::frameset data)
         rs2::align align(align_to);
 
 
-        float depth_clipping_distance = center_distance + 0.3;
+        float depth_clipping_distance = center_distance + 0.1;
 
         if (profile_changed(pipe.get_active_profile().get_streams(), profile.get_streams()))
         {
@@ -257,22 +247,25 @@ void detectAndDisplay(rs2::frameset data)
         remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, roi_b);
 
         rs2::colorizer color_map;
-        imshow("aligned", frame_to_mat(other_frame));
+        cv::imshow("aligned", frame_to_mat(other_frame));
+
 
         rs2::pointcloud pc;
-        pc.map_to(color_frame);
+        pc.map_to(other_frame);
         rs2::points points = pc.calculate(aligned_depth_frame);
 
-        points.export_to_ply("ply_aligned.ply", color_frame);
-
-        //SAVE FACE IMAGE
+        //SAVING
         filename = "faces";
+        stringstream ssf;
+        ssf << filename << "/" << filenumber << ".ply";
+        points.export_to_ply(ssf.str(), color_frame);
+
+        auto other_mat = frame_to_mat(other_frame);
         stringstream ssfn;
         ssfn << filename << "/" << filenumber << ".jpg";
         filename = ssfn.str();
+        imwrite(filename, other_mat(roi_b));
         filenumber++;
-        imwrite(filename, frame_to_mat(other_frame));
-
     }
 
     // Show image
@@ -280,11 +273,11 @@ void detectAndDisplay(rs2::frameset data)
     text = sstm.str();
     putText(color_mat, text, Point(30, 30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 255), 1, LINE_AA);
     */
-    imshow("original", color_mat);
+    cv::imshow("original", color_mat);
 
     if (!crop_color.empty())
     {
-        imshow("detected", crop_color);
+        cv::imshow("detected", crop_color);
     }
     else
         destroyWindow("detected");
@@ -370,13 +363,13 @@ void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& de
                 {
                     p_depth_frame[depth_pixel_index] = 0;
                     // Set pixel to "background" color (0x999999)
-                    std::memset(&p_other_frame[offset], 0x21, other_bpp);
+                    std::memset(&p_other_frame[offset], 255, other_bpp);
                 }
             }
             else {
                 p_depth_frame[depth_pixel_index] = 0;
                 // Set pixel to "background" color (0x999999)
-                std::memset(&p_other_frame[offset], 0x21, other_bpp);
+                //std::memset(&p_other_frame[offset], 255, other_bpp);
             }
             // Check if the depth value is invalid (<=0) or greater than the threashold
         }
@@ -409,7 +402,7 @@ void faceDetection(Mat frame)
 
         Mat faceROI = frame_gray(faces[i]);
     }
-    imshow("img", frame);
+    cv::imshow("img", frame);
 }
 
 
