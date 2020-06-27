@@ -43,6 +43,8 @@ public:
     void update(rs2::frameset& data);
     void update();
     void process();
+
+    void save();
 };
 
 

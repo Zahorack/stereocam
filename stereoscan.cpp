@@ -32,7 +32,8 @@ void Stereoscan::update(rs2::frameset& data)
     process();
 }
 
-void Stereoscan::update() {
+void Stereoscan::update()
+{
     m_data = m_pipeline.wait_for_frames();
 
     process();
@@ -49,6 +50,7 @@ void Stereoscan::process() {
     auto color_mat = frame_to_mat(color_frame);
     auto depth_mat = frame_to_mat(depth_frame);
 
+
     if (profile_changed(m_pipeline.get_active_profile().get_streams(), m_profile.get_streams()))
     {
         //If the profile was changed, update the align object, and also get the new device's depth scale
@@ -58,19 +60,22 @@ void Stereoscan::process() {
         depth_scale = get_depth_scale(m_profile.get_device());
     }
 
-    auto processed = aligninig.process(m_data);
 
     FaceDetection faceDetection(color_mat);
-
     auto faces = faceDetection.crops(1.4, 1.3);
     auto centers = faceDetection.centers();
 
-    rs2::video_frame other_frame = processed.first(align_to);
-    rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
     for (auto i = 0; i < faces.size(); i++) {
 
         std::cout << "face: " << i <<std::endl;
+
+
+
+        auto processed = aligninig.process(m_data);
+
+        rs2::video_frame other_frame = processed.first(align_to);
+        rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
         //If one of them is unavailable, continue iteration
         if (!aligned_depth_frame || !other_frame) {
@@ -81,115 +86,11 @@ void Stereoscan::process() {
         float depth_clipping_distance = center_distance + 0.1;
         remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, faces[i]);
 
+        //SAVING
         rs2::pointcloud pc;
         pc.map_to(other_frame);
         rs2::points points = pc.calculate(aligned_depth_frame);
 
-        //SAVING
-        /*std::string filename = "faces";
-        std::stringstream ssf;
-        ssf << filename << "/" << filenumber << ".ply";
-        points.export_to_ply(ssf.str(), color_frame);
-
-        auto other_mat = frame_to_mat(other_frame);
-        std::stringstream ssfn;
-        ssfn << filename << "/" << filenumber << ".jpg";
-        filename = ssfn.str();
-        cv::imwrite(filename, other_mat(faces[i]));
-        filenumber++;*/
-
-
-        cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
-        cv::Point pt2((faces[i].x + faces[i].width), (faces[i].y + faces[i].height));
-        rectangle(color_mat, pt1, pt2, cv::Scalar(0, 255, 0), 2, 8, 0);
-
-    }
-
-    cv::imshow("image", color_mat);
-
-   /*std::vector<cv::Rect> faces;
-    cv::Mat gray_mat;
-    cvtColor(color_mat, gray_mat, cv::COLOR_BGR2GRAY);
-    equalizeHist(gray_mat, gray_mat);
-
-
-    cv::CascadeClassifier face_cascade;
-    if (!face_cascade.load(face_cascade_name)) {
-        std::cout << "--(!)Error loading face cascade\n";
-    }
-    // Detect faces
-    face_cascade.detectMultiScale(gray_mat, faces, 1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE, cv::Size(30, 30));
-
-    cv::Rect roi_b;
-    float scale = 1.4;
-    float height_scale = 1.3;
-
-    // Iterate through all current detected faces
-    for (auto ic = 0; ic < faces.size(); ic++) {
-      
-        cv::Point center_point(faces[ic].x + faces[ic].width / 2, faces[ic].y + faces[ic].height / 2);
-        auto center_distance = depth_frame.get_distance(center_point.x, center_point.y);
-
-        roi_b.width = cvRound(faces[ic].width * scale);
-        roi_b.height = cvRound(faces[ic].height * scale * height_scale);
-        roi_b.x = cvRound(center_point.x - roi_b.width / 2);
-        roi_b.y = cvRound(center_point.y - roi_b.height / 2);
-
-
-        if ((roi_b.x + roi_b.width) >= color_mat.cols)
-            roi_b.width = color_mat.cols - roi_b.x;
-
-        if ((roi_b.y + roi_b.height) >= color_mat.rows)
-            roi_b.height = color_mat.rows - roi_b.y;
-
-
-        roi_b.x = clamp<int>(roi_b.x, 0, color_mat.cols - 1);
-        roi_b.y = clamp<int>(roi_b.y, 0, color_mat.rows - 1);
-        roi_b.width = clamp<int>(roi_b.width, 0, color_mat.cols - 1);
-        roi_b.height = clamp<int>(roi_b.height, 0, color_mat.rows - 1);
-
-        cv::Point pt1(roi_b.x, roi_b.y); // Display detected faces on main window
-        cv::Point pt2((roi_b.x + roi_b.width), (roi_b.y + roi_b.height));
-        rectangle(color_mat, pt1, pt2, cv::Scalar(0, 255, 0), 2, 8, 0);
-
-        float depth_scale = get_depth_scale(m_profile.get_device());
-        rs2_stream align_to = find_stream_to_align(m_profile.get_streams());
-        rs2::align aligninig(align_to);
-        //NOW 3D SCAN SAVING
-        float depth_clipping_distance = center_distance + 0.1;
-
-        if (profile_changed(m_pipeline.get_active_profile().get_streams(), m_profile.get_streams()))
-        {
-            //If the profile was changed, update the align object, and also get the new device's depth scale
-            m_profile = m_pipeline.get_active_profile();
-            align_to = find_stream_to_align(m_profile.get_streams());
-            aligninig = rs2::align(align_to);
-            depth_scale = get_depth_scale(m_profile.get_device());
-        }
-
-        //Get processed aligned frame
-        auto processed = aligninig.process(m_data);
-
-        // Trying to get both other and aligned depth frames
-        rs2::video_frame other_frame = processed.first(align_to);
-        rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
-
-        //If one of them is unavailable, continue iteration
-        if (!aligned_depth_frame || !other_frame) {
-            continue;
-        }
-        remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, roi_b);
-
-        //rs2::colorizer color_map;
-        //cv::imshow("aligned", frame_to_mat(other_frame));
-
-
-
-        rs2::pointcloud pc;
-        pc.map_to(other_frame);
-        rs2::points points = pc.calculate(aligned_depth_frame);
-
-        //SAVING
         std::string filename = "faces";
         std::stringstream ssf;
         ssf << filename << "/" << filenumber << ".ply";
@@ -199,13 +100,23 @@ void Stereoscan::process() {
         std::stringstream ssfn;
         ssfn << filename << "/" << filenumber << ".jpg";
         filename = ssfn.str();
-        imwrite(filename, other_mat(roi_b));
+        cv::imwrite(filename, other_mat(faces[i]));
         filenumber++;
-    
-    }*/
+
+
+        cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
+        cv::Point pt2((faces[i].x + faces[i].width), (faces[i].y + faces[i].height));
+        rectangle(color_mat, pt1, pt2, cv::Scalar(0, 255, 0), 2, 8, 0);
+
+    }
+
+    cv::imshow("image", color_mat);
 }
 
 
+void Stereoscan::save() {
+
+}
 
 static float get_depth_scale(rs2::device dev)
 {
