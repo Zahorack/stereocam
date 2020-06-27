@@ -36,6 +36,7 @@ rs2::pipeline pipe;
 
 CascadeClassifier face_cascade;
 
+rs2::pipeline_profile profile;
 
 void faceDetection(Mat frame);
 void detectAndDisplay(rs2::frameset data);
@@ -72,7 +73,7 @@ struct rect
     }
 };
 
-rs2::pipeline_profile profile;
+
 
 int main(int argc, char* argv[]) try
 {
@@ -215,13 +216,10 @@ void detectAndDisplay(rs2::frameset data)
         Point pt2((roi_b.x + roi_b.width), (roi_b.y + roi_b.height));
         rectangle(color_mat, pt1, pt2, Scalar(0, 255, 0), 2, 8, 0);
 
-
-        //NOW 3D SCAN SAVING
         float depth_scale = get_depth_scale(profile.get_device());
         rs2_stream align_to = find_stream_to_align(profile.get_streams());
-        rs2::align align(align_to);
-
-
+        rs2::align aligninig(align_to);
+        //NOW 3D SCAN SAVING
         float depth_clipping_distance = center_distance + 0.1;
 
         if (profile_changed(pipe.get_active_profile().get_streams(), profile.get_streams()))
@@ -229,12 +227,12 @@ void detectAndDisplay(rs2::frameset data)
             //If the profile was changed, update the align object, and also get the new device's depth scale
             profile = pipe.get_active_profile();
             align_to = find_stream_to_align(profile.get_streams());
-            align = rs2::align(align_to);
+            aligninig = rs2::align(align_to);
             depth_scale = get_depth_scale(profile.get_device());
         }
 
         //Get processed aligned frame
-        auto processed = align.process(data);
+        auto processed = aligninig.process(data);
 
         // Trying to get both other and aligned depth frames
         rs2::video_frame other_frame = processed.first(align_to);
@@ -246,8 +244,8 @@ void detectAndDisplay(rs2::frameset data)
         }
         remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, roi_b);
 
-        rs2::colorizer color_map;
-        cv::imshow("aligned", frame_to_mat(other_frame));
+        //rs2::colorizer color_map;
+        //cv::imshow("aligned", frame_to_mat(other_frame));
 
 
         rs2::pointcloud pc;
@@ -274,13 +272,6 @@ void detectAndDisplay(rs2::frameset data)
     putText(color_mat, text, Point(30, 30), FONT_HERSHEY_COMPLEX_SMALL, 0.8, Scalar(0, 0, 255), 1, LINE_AA);
     */
     cv::imshow("original", color_mat);
-
-    if (!crop_color.empty())
-    {
-        cv::imshow("detected", crop_color);
-    }
-    else
-        destroyWindow("detected");
 }
 
 float get_depth_scale(rs2::device dev)
