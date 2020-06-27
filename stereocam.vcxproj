@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FaceDetection.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stereoscan.cpp" />
   </ItemGroup>
@@ -149,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cv-helpers.h" />
+    <ClInclude Include="FaceDetection.h" />
     <ClInclude Include="stereoscan.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

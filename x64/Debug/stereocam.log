@@ -1,16 +1,3 @@
 ﻿  main.cpp
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(106,50): warning C4244: '=': conversion from 'unsigned __int64' to 'int', possible loss of data
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(186,22): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(187,29): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(223,39): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(387,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
-          with
-          [
-              _Tp=int
-          ]
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(387,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
-          with
-          [
-              _Tp=int
-          ]
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(28,50): warning C4244: '=': conversion from 'unsigned __int64' to 'int', possible loss of data
   stereocam.vcxproj -> C:\Users\oholly.DQI\Documents\Projects\stereocam\x64\Debug\stereocam.exe
