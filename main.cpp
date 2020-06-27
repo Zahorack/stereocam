@@ -42,7 +42,7 @@ void detectAndDisplay(rs2::frameset data);
 void saveImagesToPng();
 
 
-void remove_background(rs2::video_frame& other, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist);
+void remove_background(rs2::video_frame& other, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist, cv::Rect roi);
 float get_depth_scale(rs2::device dev);
 rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams);
 bool profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev);
@@ -87,13 +87,13 @@ int main(int argc, char* argv[]) try
     namedWindow(window_name, WINDOW_AUTOSIZE);
 
     // Capture 30 frames to give autoexposure, etc. a chance to settle
-    for (auto i = 0; i < 20; ++i)
-        pipe.wait_for_frames();
+
 
     if (!face_cascade.load(face_cascade_name)) {
         cout << "--(!)Error loading face cascade\n";
     }
-
+  //  for (auto i = 0; i < 20; ++i)
+      //  pipe.wait_for_frames();
 
     while (waitKey(1) < 0 && getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
@@ -221,18 +221,9 @@ void detectAndDisplay(rs2::frameset data)
         crop_depth = depth_mat(roi_b);
 
 
-        //SAVE FACE IMAGE
-        /*filename = "faces";
-        stringstream ssfn;
-        ssfn << filename << "/" << filenumber << ".jpg";
-        filename = ssfn.str();
-        filenumber++;
-        imwrite(filename, crop_color);*/
-
         Point pt1(roi_b.x, roi_b.y); // Display detected faces on main window
         Point pt2((roi_b.x + roi_b.width), (roi_b.y + roi_b.height));
         rectangle(color_mat, pt1, pt2, Scalar(0, 255, 0), 2, 8, 0);
-
 
 
         //NOW 3D SCAN SAVING
@@ -241,7 +232,7 @@ void detectAndDisplay(rs2::frameset data)
         rs2::align align(align_to);
 
 
-        float depth_clipping_distance = center_distance+0.2;
+        float depth_clipping_distance = center_distance + 0.3;
 
         if (profile_changed(pipe.get_active_profile().get_streams(), profile.get_streams()))
         {
@@ -263,7 +254,7 @@ void detectAndDisplay(rs2::frameset data)
         if (!aligned_depth_frame || !other_frame) {
             continue;
         }
-        remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance);
+        remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, roi_b);
 
         rs2::colorizer color_map;
         imshow("aligned", frame_to_mat(other_frame));
@@ -272,7 +263,15 @@ void detectAndDisplay(rs2::frameset data)
         pc.map_to(color_frame);
         rs2::points points = pc.calculate(aligned_depth_frame);
 
-       //points.export_to_ply("ply_aligned.ply", color_frame);
+        points.export_to_ply("ply_aligned.ply", color_frame);
+
+        //SAVE FACE IMAGE
+        filename = "faces";
+        stringstream ssfn;
+        ssfn << filename << "/" << filenumber << ".jpg";
+        filename = ssfn.str();
+        filenumber++;
+        imwrite(filename, frame_to_mat(other_frame));
 
     }
 
@@ -343,7 +342,7 @@ rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& streams)
 }
 
 
-void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist)
+void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist, cv::Rect roi)
 {
     const uint16_t* p_depth_frame_to_read = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
     uint16_t* p_depth_frame = reinterpret_cast<uint16_t*>(const_cast<void*>(depth_frame.get_data()));
@@ -362,23 +361,24 @@ void remove_background(rs2::video_frame& other_frame, const rs2::depth_frame& de
         auto depth_pixel_index = y * width;
         for (int x = 0; x < width; x++, ++depth_pixel_index)
         {
-            // Get the depth value of the current pixel
             auto pixels_distance = depth_scale * p_depth_frame_to_read[depth_pixel_index];
+            // Calculate the offset in other frame's buffer to current pixel
+            auto offset = depth_pixel_index * other_bpp;
 
-            //std::cout << "depth: " << p_depth_frame_to_read[depth_pixel_index] << std::endl;
-
-            // Check if the depth value is invalid (<=0) or greater than the threashold
-            if (pixels_distance <= 0.f || pixels_distance > clipping_dist)
-            {
-                // Calculate the offset in other frame's buffer to current pixel
-                auto offset = depth_pixel_index * other_bpp;
-                auto offset_d = depth_pixel_index * deep_bpp;
-
+            if (x > roi.x&& x < (roi.x + roi.width) && y > roi.y&& y < (roi.y + roi.height)) {
+                if (pixels_distance <= 0.f || pixels_distance > clipping_dist)
+                {
+                    p_depth_frame[depth_pixel_index] = 0;
+                    // Set pixel to "background" color (0x999999)
+                    std::memset(&p_other_frame[offset], 0x21, other_bpp);
+                }
+            }
+            else {
                 p_depth_frame[depth_pixel_index] = 0;
                 // Set pixel to "background" color (0x999999)
                 std::memset(&p_other_frame[offset], 0x21, other_bpp);
-                //std::memset(&p_depth_frame[depth_pixel_index], 0x0000, 1);
             }
+            // Check if the depth value is invalid (<=0) or greater than the threashold
         }
     }
 }

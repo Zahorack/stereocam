@@ -1,13 +1,13 @@
 ﻿  main.cpp
 C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(105,50): warning C4244: '=': conversion from 'unsigned __int64' to 'int', possible loss of data
 C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(192,22): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(282,39): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(441,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(235,39): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(403,68): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int
           ]
-C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(441,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(403,33): warning C4244: 'argument': conversion from 'double' to '_Tp', possible loss of data
           with
           [
               _Tp=int
