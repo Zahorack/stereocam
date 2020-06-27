@@ -1,4 +1,2 @@
-﻿  stereoscan.cpp
-C:\Users\oholly.DQI\Documents\Projects\stereocam\stereoscan.cpp(65,46): warning C4305: 'argument': truncation from 'double' to 'float'
-C:\Users\oholly.DQI\Documents\Projects\stereocam\stereoscan.cpp(86,39): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+﻿  main.cpp
   stereocam.vcxproj -> C:\Users\oholly.DQI\Documents\Projects\stereocam\x64\Debug\stereocam.exe

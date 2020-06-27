@@ -70,8 +70,6 @@ void Stereoscan::process() {
 
         std::cout << "face: " << i <<std::endl;
 
-
-
         auto processed = aligninig.process(m_data);
 
         rs2::video_frame other_frame = processed.first(align_to);
