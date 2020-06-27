@@ -248,6 +248,7 @@ void detectAndDisplay(rs2::frameset data)
         //cv::imshow("aligned", frame_to_mat(other_frame));
 
 
+
         rs2::pointcloud pc;
         pc.map_to(other_frame);
         rs2::points points = pc.calculate(aligned_depth_frame);
