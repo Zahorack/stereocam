@@ -29,21 +29,45 @@ void Stereoscan::update(rs2::frameset& data)
 {
     m_data = data;
 
-    process();
+    FaceDetection faceDetection;
+
+    do {
+        rs2::video_frame color_frame = m_data.get_color_frame();
+        auto color_mat = frame_to_mat(color_frame);
+
+        faceDetection.update(color_mat);
+        auto faces = faceDetection.crops(1.4, 1.3);
+
+    } while (faceDetection.available());
+
+    process(faceDetection);
 }
 
 void Stereoscan::update()
 {
-    m_data = m_pipeline.wait_for_frames();
 
-    process();
+    FaceDetection faceDetection;
+
+    do {
+        m_data = m_pipeline.wait_for_frames();
+
+        rs2::video_frame color_frame = m_data.get_color_frame();
+        auto color_mat = frame_to_mat(color_frame);
+
+        faceDetection.update(color_mat);
+        auto faces = faceDetection.crops(1.4, 1.3);
+
+    } while (!faceDetection.available());
+
+
+    process(faceDetection);
 }
 
 void Stereoscan::initialize() {
 
 }
 
-void Stereoscan::process() {
+void Stereoscan::process(FaceDetection faceDetection) {
     rs2::video_frame color_frame = m_data.get_color_frame();
     rs2::depth_frame depth_frame = m_data.get_depth_frame();
 
@@ -60,8 +84,6 @@ void Stereoscan::process() {
         depth_scale = get_depth_scale(m_profile.get_device());
     }
 
-
-    FaceDetection faceDetection(color_mat);
     auto faces = faceDetection.crops(1.4, 1.3);
     auto centers = faceDetection.centers();
 

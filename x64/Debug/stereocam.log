@@ -1,2 +1,3 @@
-﻿  main.cpp
+﻿  AudioTrigger.cpp
+C:\Users\oholly.DQI\Documents\Projects\stereocam\AudioTrigger.cpp(49,15): warning C4101: 'peaks': unreferenced local variable
   stereocam.vcxproj -> C:\Users\oholly.DQI\Documents\Projects\stereocam\x64\Debug\stereocam.exe

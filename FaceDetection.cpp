@@ -9,6 +9,9 @@ static cv::String face_cascade_name = "haarcascade_frontalface_default.xml";
 static cv::CascadeClassifier s_face_cascade(face_cascade_name);
 
 
+FaceDetection::FaceDetection()
+{}
+
 
 FaceDetection::FaceDetection(cv::Mat& frame) :
 	m_frame(frame)
@@ -22,11 +25,23 @@ FaceDetection::FaceDetection(cv::Mat& frame) :
 	std::cout << "found faces:: "<<m_faces.size() << std::endl;
 }
 
+void FaceDetection::update(cv::Mat& frame)
+{
+	m_frame = frame;
+	cv::Mat gray;
+	cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
+	equalizeHist(gray, gray);
+
+	s_face_cascade.detectMultiScale(gray, m_faces, 1.2, 2, 0 | cv::CASCADE_SCALE_IMAGE, cv::Size(30, 30));
+
+	std::cout << "found faces:: " << m_faces.size() << std::endl;
+}
+
 FaceDetection::~FaceDetection()
 {}
 
 
-std::vector<cv::Rect> FaceDetection::crops(float scale, float height_scale) {
+std::vector<cv::Rect> FaceDetection::crops(double scale, double height_scale) {
 
 	std::vector<cv::Rect> roi;
 
@@ -74,4 +89,12 @@ std::vector<cv::Point> FaceDetection::centers() {
 		}
 
 	return centers;
+}
+
+bool FaceDetection::available()
+{
+	if (m_faces.size())
+		return true;
+
+	return false;
 }

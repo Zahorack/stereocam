@@ -42,7 +42,7 @@ public:
     void initialize();
     void update(rs2::frameset& data);
     void update();
-    void process();
+    void process(FaceDetection faceDetection);
 
     void save();
 };

@@ -22,10 +22,15 @@ class FaceDetection {
 	cv::Mat m_frame;
 
 public:
+	FaceDetection();
 	FaceDetection(cv::Mat& frame);
 	~FaceDetection();
 
-	std::vector<cv::Rect> crops(float scale, float height_scale);
+	std::vector<cv::Rect> crops(double scale, double height_scale);
 	std::vector<cv::Point> centers();
+
+	void update(cv::Mat& frame);
+
+	bool available();
 };
 

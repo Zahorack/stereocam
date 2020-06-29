@@ -141,6 +141,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AudioTrigger.cpp" />
     <ClCompile Include="FaceDetection.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stereoscan.cpp" />
@@ -149,6 +150,7 @@
     <None Include=".gitignore" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AudioTrigger.h" />
     <ClInclude Include="cv-helpers.h" />
     <ClInclude Include="FaceDetection.h" />
     <ClInclude Include="stereoscan.h" />

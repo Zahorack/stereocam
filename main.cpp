@@ -1,3 +1,7 @@
+//
+// Created by Zahorack (Oliver Hollý)
+//
+
 // License: Apache 2.0. See LICENSE file in root directory.
 // Copyright(c) 2017 Intel Corporation. All Rights Reserved.
 
@@ -5,63 +9,72 @@
 #include <opencv2/opencv.hpp>   // Include OpenCV API
 
 #include "stereoscan.h"
+#include "AudioTrigger.h"
 #include <windows.h>
 
-#include <Audioclient.h>
-#include <endpointvolume.h>
-#include <AudioEngineEndpoint.h>
-
-#include <devicetopology.h>
-#include <mmdeviceapi.h>
 
 
 int main(int argc, char* argv[]) try
 {
-
-
-    HRESULT hr;
-    IMMDeviceEnumerator* pEnumerator = NULL;
-    IMMDevice* pDevice = NULL;
-    IAudioMeterInformation* pMeterInfo = NULL;
-    
-    CoInitialize(NULL);
-
-    // Get enumerator for audio endpoint devices.
-    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, 
-            CLSCTX_INPROC_SERVER,
-            __uuidof(IMMDeviceEnumerator),
-            (void**)&pEnumerator);
-
-    // Get peak meter for default audio-rendering device.
-    hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
-    hr = pDevice->Activate(__uuidof(IAudioMeterInformation), CLSCTX_ALL, NULL, (void**)&pMeterInfo);
-
-    float peaks[2];
-    uint channelCount;
-    pMeterInfo->GetMeteringChannelCount(&channelCount);
-
-
     rs2::pipeline pipe;
     Stereoscan stereoscan(pipe);
+    AudioTrigger audioTrigger;
 
-    //for (auto i = 0; i < 20; ++i)
-     //pipe.wait_for_frames();
+    for (auto i = 0; i < 20; ++i)
+        pipe.wait_for_frames();
 
+    //check usb cameras
+   /* cv::VideoCapture camera;
+    int device_counts = 0;
+    while (true) {
+        if (!camera.open(device_counts++)) {
+            break;
+        }
+    }
+    camera.release();
+    std::cout << "devices count : " << device_counts - 1 << std::endl;*/
+
+
+    cv::VideoCapture cap(1);
+    cap.set(cv::CAP_PROP_FORMAT, CV_16U);
+
+        // if not success, exit program
+    if (cap.isOpened() == false)
+    {
+        std::cout << "Cannot open the video camera" << std::endl;
+        std::cin.get(); //wait for any key press
+    }
+
+
+    cv::Mat rgb_frame;
 
     while (cv::waitKey(1) < 0) 
     {
-        //pMeterInfo->GetPeakValue(peaks);
-        pMeterInfo->GetChannelsPeakValues(channelCount, peaks);
-        std::cout <<"channels:" <<channelCount<< "  peak1: " << peaks[0] << "  peak2: " << peaks[1] << std::endl;
+
+        audioTrigger.update();
+
+        if (audioTrigger.check(Events::Pass)) {
+            std::cout << "Passing\n";
+            stereoscan.update();
+            audioTrigger.clear(Events::Pass);
+        }
+
+        if (audioTrigger.check(Events::Warning)) {
+            std::cout << "Warning\n";
+
+            audioTrigger.clear(Events::Warning);
+        }
+
+        bool bSuccess = cap.read(rgb_frame);
+        cv::imshow("rgb", rgb_frame);
 
         //rs2::frameset data = pipe.wait_for_frames();
-
         /*static int last_frame_number = 0;
         if (data.get_frame_number() == last_frame_number)
             continue;
         last_frame_number = data.get_frame_number();*/
 
-        stereoscan.update();
+
     }
     return EXIT_SUCCESS;
 }
