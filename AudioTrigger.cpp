@@ -42,11 +42,11 @@ AudioTrigger::AudioTrigger()
             __uuidof(IMMDeviceEnumerator),
             (void**)&pEnumerator);
 
+
         // Get peak meter for default audio-rendering device.
         hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &pDevice);
         hr = pDevice->Activate(__uuidof(IAudioMeterInformation), CLSCTX_ALL, NULL, (void**)&pMeterInfo);
 
-        float peaks[2];
         unsigned int channelCount;
         pMeterInfo->GetMeteringChannelCount(&channelCount);
 
@@ -60,7 +60,7 @@ AudioTrigger::~AudioTrigger()
 void AudioTrigger::update()
 {
     pMeterInfo->GetChannelsPeakValues(2, m_peaks);
-    std::cout << "  peak1: " << m_peaks[0] << "  peak2: " << m_peaks[1] << std::endl;
+    //std::cout << "  peak1: " << m_peaks[0] << "  peak2: " << m_peaks[1] << std::endl;
 
     float pass_peak = m_peaks[0];
     float warning_peak = m_peaks[1];
@@ -69,8 +69,6 @@ void AudioTrigger::update()
     int seconds = getSeconds();
 
     if (pass_peak > AudioPeakLimit) {
-        std::cout << "time " << seconds << std::endl;
-
         if ((m_lastEventTime[Events::Pass] + MaxEventPeriodSec) < seconds) {
             m_events[Events::Pass] = true;
             m_lastEventTime[Events::Pass] = seconds;

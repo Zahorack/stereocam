@@ -20,30 +20,36 @@ int main(int argc, char* argv[]) try
     Stereoscan stereoscan(pipe);
     AudioTrigger audioTrigger;
 
-    for (auto i = 0; i < 20; ++i)
+    for (auto i = 0; i < 20; ++i) {
         pipe.wait_for_frames();
+    }
+
 
     //check usb cameras
-   /* cv::VideoCapture camera;
+    /*cv::VideoCapture camera;
     int device_counts = 0;
+    cv::Mat fr;
     while (true) {
+        camera.set(cv::CAP_PROP_FORMAT, CV_16U);
         if (!camera.open(device_counts++)) {
             break;
         }
+        //camera.read(fr);
+        //std::cout<<"Device: "<<device_counts << "  Size " << fr.size << std::endl;
     }
     camera.release();
     std::cout << "devices count : " << device_counts - 1 << std::endl;*/
 
 
-    cv::VideoCapture cap(1);
+    /*cv::VideoCapture cap(1);
     cap.set(cv::CAP_PROP_FORMAT, CV_16U);
 
-        // if not success, exit program
-    if (cap.isOpened() == false)
+ 
+    /*if (cap.isOpened() == false)
     {
         std::cout << "Cannot open the video camera" << std::endl;
         std::cin.get(); //wait for any key press
-    }
+    }*/
 
 
     cv::Mat rgb_frame;
@@ -65,14 +71,10 @@ int main(int argc, char* argv[]) try
             audioTrigger.clear(Events::Warning);
         }
 
-        bool bSuccess = cap.read(rgb_frame);
-        cv::imshow("rgb", rgb_frame);
+        //bool bSuccess = cap.read(rgb_frame);
+        //cv::imshow("rgb", rgb_frame);
 
-        //rs2::frameset data = pipe.wait_for_frames();
-        /*static int last_frame_number = 0;
-        if (data.get_frame_number() == last_frame_number)
-            continue;
-        last_frame_number = data.get_frame_number();*/
+        //stereoscan.update();
 
 
     }

@@ -25,6 +25,7 @@ FaceDetection::FaceDetection(cv::Mat& frame) :
 	std::cout << "found faces:: "<<m_faces.size() << std::endl;
 }
 
+
 void FaceDetection::update(cv::Mat& frame)
 {
 	m_frame = frame;

@@ -35,12 +35,12 @@ class Stereoscan {
     rs2::align aligninig;
 
     int filenumber = 0;
+
 public:
 	Stereoscan(rs2::pipeline& pipe);
     ~Stereoscan();
 
     void initialize();
-    void update(rs2::frameset& data);
     void update();
     void process(FaceDetection faceDetection);
 

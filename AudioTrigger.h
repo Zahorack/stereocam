@@ -27,5 +27,4 @@ public:
 	void clear(Events event);
 
 	bool check(Events event);
-
 };
