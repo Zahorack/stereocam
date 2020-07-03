@@ -151,6 +151,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="rgbscan.cpp" />
     <ClCompile Include="stereoscan.cpp" />
+    <ClCompile Include="ThermalCamera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
