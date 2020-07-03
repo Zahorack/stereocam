@@ -1,2 +1,4 @@
-﻿  AudioTrigger.cpp
+﻿  main.cpp
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(127,91): warning C4333: '>>': right shift by too large amount, data loss
+C:\Users\oholly.DQI\Documents\Projects\stereocam\main.cpp(70,14): warning C4101: 'buf': unreferenced local variable
   stereocam.vcxproj -> C:\Users\oholly.DQI\Documents\Projects\stereocam\x64\Debug\stereocam.exe

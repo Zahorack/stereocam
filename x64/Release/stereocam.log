@@ -1,7 +1,7 @@
-﻿  AudioTrigger.cpp
+﻿  stereoscan.cpp
   Generating code
-  0 of 1108 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+  11 of 1108 functions ( 1.0%) were compiled, the rest were copied from previous compilation.
+    1 functions were new in current compilation
+    14 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   stereocam.vcxproj -> C:\Users\oholly.DQI\Documents\Projects\stereocam\x64\Release\stereocam.exe

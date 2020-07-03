@@ -149,6 +149,7 @@
     <ClCompile Include="AudioTrigger.cpp" />
     <ClCompile Include="FaceDetection.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="rgbscan.cpp" />
     <ClCompile Include="stereoscan.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -158,6 +159,7 @@
     <ClInclude Include="AudioTrigger.h" />
     <ClInclude Include="cv-helpers.h" />
     <ClInclude Include="FaceDetection.h" />
+    <ClInclude Include="rgbscan.h" />
     <ClInclude Include="stereoscan.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
