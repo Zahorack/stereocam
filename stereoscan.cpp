@@ -43,19 +43,22 @@ void Stereoscan::update()
 
     do {
         m_data = m_pipeline.wait_for_frames();
-      
+
+        rs2::video_frame color_frame = m_data.get_color_frame();
+        rs2::depth_frame depth_frame = m_data.get_depth_frame();
+
+        invert(color_frame, depth_frame);
         
         static unsigned long long last_frame_number = 0;
         if (m_data.get_frame_number() == last_frame_number)
             continue;
         last_frame_number = m_data.get_frame_number();
 
-        rs2::video_frame color_frame = m_data.get_color_frame();
 
         auto color_mat = frame_to_mat(color_frame);
         
 
-        cv::flip(color_mat, color_mat, -1);
+        //cv::flip(color_mat, color_mat, -1);
         faceDetection.update(color_mat);
 
     } while (!faceDetection.available());
@@ -72,13 +75,12 @@ void Stereoscan::process(FaceDetection faceDetection) {
     rs2::depth_frame depth_frame = m_data.get_depth_frame();
 
 
-    invert(color_frame, depth_frame);
+ 
 
     auto color_mat = frame_to_mat(color_frame);
     auto depth_mat = frame_to_mat(depth_frame);
 
-    if (profile_changed(m_pipeline.get_active_profile().get_streams(), m_profile.get_streams()))
-    {
+    if (profile_changed(m_pipeline.get_active_profile().get_streams(), m_profile.get_streams())) {
         //If the profile was changed, update the align object, and also get the new device's depth scale
         m_profile = m_pipeline.get_active_profile();
         align_to = find_stream_to_align(m_profile.get_streams());
@@ -241,25 +243,26 @@ static void revereseArray(T* start, T* stop, int elemnetSize) {
     T* head = start;
     T* tail = stop;
 
+    T* temp = new T[elemnetSize];
 
     while (head < tail) {
-        T temp[elemnetSize];
 
-        std::memcpy(temp, head, elemnetSize);
-        std::memcpy(head, tail, elemnetSize);
-        std::memcpy(tail, temp, elemnetSize);
+        std::memcpy(temp, head, sizeof(T) * elemnetSize);
+        std::memcpy(head, tail, sizeof(T) * elemnetSize);
+        std::memcpy(tail, temp, sizeof(T) * elemnetSize);
 
         head += elemnetSize;
         tail -= elemnetSize;
     }
 
+    //std::cout << sizeof(T)<<std::endl;
+    delete[] temp;
+
 }
 
 static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_frame)
 {
-    const uint16_t* p_depth_frame_to_read = reinterpret_cast<const uint16_t*>(depth_frame.get_data());
     uint16_t* p_depth_frame = reinterpret_cast<uint16_t*>(const_cast<void*>(depth_frame.get_data()));
-
     uint8_t* p_color_frame = reinterpret_cast<uint8_t*>(const_cast<void*>(color_frame.get_data()));
 
     int width = color_frame.get_width();
@@ -268,60 +271,11 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     int deep_bpp = depth_frame.get_bytes_per_pixel();
 
 
-    std::cout << "width: " << width << std::endl;
-    std::cout << "height: " << height << std::endl;
-
-    std::cout << "deep_bpp: " << deep_bpp << std::endl;
-
     const auto color_frame_size = width * height * color_bpp;
     const auto depth_frame_size = depth_frame.get_width() * depth_frame.get_height();
 
-    std::cout << "depth_frame: " << depth_frame.get_width() << std::endl;
-    std::cout << "depth_frame: " << depth_frame.get_height() << std::endl;
-
-    uint8_t* color_buff = new uint8_t[color_frame_size];
-    uint16_t* depth_buff= new uint16_t[depth_frame_size];
-
-    //std::memcpy(color_buff, p_color_frame+50, color_frame_size);
-    //std::memcpy(depth_buff, p_depth_frame, depth_frame_size);
-
-    for (int i = 0; i < depth_frame_size; i++) {
-        depth_buff[i] = p_depth_frame[i];
-    }
-
-    for (int i = 0; i < color_frame_size; i++) {
-        color_buff[i] = p_color_frame[i+51];
-    }
-
-
-   //std::reverse(p_color_frame+50, p_color_frame + color_frame_size);
-   // std::reverse(p_depth_frame, p_depth_frame + depth_frame_size);
-
-   int yc = 0;
-//#pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
-    for (yc = 0; yc < height; yc++)
-    {
-
-        //std::cout << yc << std::endl;
-        auto depth_pixel_index = yc * width;
-        for (int x = 0; x < width; x++, ++depth_pixel_index)
-        {
-            // Calculate the offset in other frame's buffer to current pixel
-            auto offset = depth_pixel_index * color_bpp;
-
-           // std::cout << "i1: " << depth_pixel_index << "  i2:  " << depth_frame_size - depth_pixel_index << std::endl;
-            p_depth_frame[depth_pixel_index] = depth_buff[depth_frame_size- depth_pixel_index ];
-            //p_depth_frame[depth_pixel_index] = depth_buff[depth_pixel_index];
-            //p_color_frame[offset] = color_buff[color_frame_size - offset];
-
-           // std::memcpy(&p_8_depth_frame[depth_pixel_index], &depth_buff[depth_frame_size - depth_pixel_index], 2);
-
-            std::memcpy(&p_color_frame[offset], &color_buff[color_frame_size - offset], color_bpp);
-        }
-    }
-
-    delete[] color_buff;
-    delete[] depth_buff;
+    revereseArray<uint8_t>(p_color_frame+51, p_color_frame + color_frame_size, 3);
+    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size, 1);
 }
 
 
