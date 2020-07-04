@@ -13,6 +13,7 @@
 #include <windows.h>
 #include "cv-helpers.h"
 
+
 namespace Cameras {
     enum Enum {
         Stereo = 0,
@@ -24,71 +25,61 @@ namespace Cameras {
 
 Cameras::Enum camera_id = Cameras::Enum::RGB;
 
-long scale(long x, long in_min, long in_max, long out_min, long out_max)
-{
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
-
+static int countConnectedCameras();
+static int getIndexOfFirstCameraWithResolution(int width, int height);
 
 int main(int argc, char* argv[]) try
 {
-    rs2::pipeline pipe;
 
-    Stereoscan stereoscan(pipe);
+    int device_counts = countConnectedCameras();
+
     AudioTrigger audioTrigger;
 
-    for (auto i = 0; i < 20; ++i) {
-        pipe.wait_for_frames();
-    }
+    // If there is Thermal camera and 2 intel relasense, than use only them 
+    //TODO: In NUC relase use device_counts >=3
+    if (device_counts >= 4) {
+        rs2::pipeline pipe;
+        Stereoscan stereoscan(pipe);
 
-
-    //check usb cameras
-   /*cv::VideoCapture camera;
-    int device_counts = 0;
-
-    while (true) {
-        cv::Mat fr;
-        //camera.set(cv::CAP_PROP_FORMAT, CV_16U);
-        if (!camera.open(device_counts++)) {
-            break;
-        }
-       // camera.read(fr);
-       // std::cout<<"Device: "<<device_counts << "  Size " << fr.size << std::endl;
-    }
-    camera.release();
-    std::cout << "devices count : " << device_counts - 1 << std::endl;
-    
-    getchar();*/
-
-    //cv::VideoCapture cap(0);
-  
-
-    while (cv::waitKey(1) < 0) 
-    {
-
-        /*
-        audioTrigger.update();
-
-        if (audioTrigger.check(Events::Pass)) {
-            std::cout << "Passing\n";
-
-            audioTrigger.clear(Events::Pass);
+        for (auto i = 0; i < 20; ++i) {
+            pipe.wait_for_frames();
         }
 
-        if (audioTrigger.check(Events::Warning)) {
-            std::cout << "Warning\n";
+        while (cv::waitKey(1) < 0)
+        {
+            audioTrigger.update();
 
-            if(camera_id == Cameras::Enum::Stereo)
+            if (audioTrigger.check(Events::Pass)) {
+                std::cout << "Passing\n";
+                audioTrigger.clear(Events::Pass);
+            }
+            if (audioTrigger.check(Events::Warning)) {
                 stereoscan.update();
+                audioTrigger.clear(Events::Warning);
+            }
+        }
+    }
+    else { //else, use RGB camera from thermal module
 
-            if (camera_id == Cameras::Enum::RGB) {
+        cv::VideoCapture cap(getIndexOfFirstCameraWithResolution(480, 640));
+        cv::Mat frame;
+
+        while (cv::waitKey(1) < 0)
+        {
+            audioTrigger.update();
+
+            if (audioTrigger.check(Events::Pass)) {
+                std::cout << "Passing\n";
+                audioTrigger.clear(Events::Pass);
+            }
+            if (audioTrigger.check(Events::Warning)) {
+
                 FaceDetection faceDetection;
-
                 do {
-                    bool bSuccess = cap.read(rgb_frame);
+                    bool bSuccess = cap.read(frame);
 
                     std::cout << "RGB capture\n";
-                    faceDetection.update(rgb_frame);
+                    faceDetection.update(frame);
 
                 } while (!faceDetection.available());
 
@@ -101,20 +92,17 @@ int main(int argc, char* argv[]) try
                     std::stringstream ssfn;
                     ssfn << "faces/RGB/" << filenumber << ".jpg";
                     filename = ssfn.str();
-                    cv::imwrite(filename, rgb_frame(faces[i]));
+                    cv::imwrite(filename, frame(faces[i]));
                     filenumber++;
                 }
+                audioTrigger.clear(Events::Warning);
             }
 
-            audioTrigger.clear(Events::Warning);
-        }*/
-        
-
-
-        stereoscan.update();
-
-
+            cv::imshow("frame", frame);
+        }
     }
+
+
     return EXIT_SUCCESS;
 }
 
@@ -130,3 +118,51 @@ catch (const std::exception & e)
     return EXIT_FAILURE;
 }
 
+
+
+
+static int countConnectedCameras() {
+
+    cv::VideoCapture camera;
+    int device_counts = 0;
+    while (true) {
+        if (!camera.open(device_counts)) {
+            break;
+        }
+        else
+            device_counts++;
+    }
+    camera.release();
+    std::cout << "devices count : " << device_counts << std::endl;
+
+    return device_counts;
+}
+
+
+static int getIndexOfFirstCameraWithResolution(int height, int width) {
+
+    cv::VideoCapture camera;
+    int device_counts = 0;
+    int device_id = -1;
+
+    while (true) {
+        cv::Mat frame;
+        if (!camera.open(device_counts)) {
+            break;
+        }
+        else {
+            camera.read(frame);
+
+            std::cout << "Frame size: " << frame.size <<"  heiht:  "<<frame.size().height<< std::endl;
+            if (frame.size().height == height && frame.size().width == width) {
+                device_id = device_counts;
+                break;
+            }
+            device_counts++;
+        }
+    }
+    camera.release();
+    std::cout << "devices id : " << device_id << std::endl;
+
+    return device_id;
+}

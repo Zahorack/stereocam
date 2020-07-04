@@ -13,6 +13,7 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
 
 
 
+
 Stereoscan::Stereoscan(rs2::pipeline& pipe) :
     m_pipeline(pipe),
     m_profile(m_pipeline.start()),
@@ -37,6 +38,8 @@ Stereoscan::~Stereoscan()
 
 
 
+
+
 void Stereoscan::update()
 {
     FaceDetection faceDetection;
@@ -47,6 +50,7 @@ void Stereoscan::update()
         rs2::video_frame color_frame = m_data.get_color_frame();
         rs2::depth_frame depth_frame = m_data.get_depth_frame();
 
+        /*Important USE only if camera is upside down*/
         invert(color_frame, depth_frame);
         
         static unsigned long long last_frame_number = 0;
@@ -54,10 +58,7 @@ void Stereoscan::update()
             continue;
         last_frame_number = m_data.get_frame_number();
 
-
         auto color_mat = frame_to_mat(color_frame);
-        
-
         //cv::flip(color_mat, color_mat, -1);
         faceDetection.update(color_mat);
 
@@ -115,7 +116,7 @@ void Stereoscan::process(FaceDetection faceDetection) {
 
         std::string filename = "faces";
         std::stringstream ssf;
-        ssf << "faces/3D/" << filenumber << ".ply";
+        ssf << "faces/RGB/" << filenumber << ".ply";
         points.export_to_ply(ssf.str(), color_frame);
 
         auto other_mat = frame_to_mat(other_frame);
@@ -273,7 +274,7 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     const auto depth_frame_size = depth_frame.get_width() * depth_frame.get_height();
 
     revereseArray<uint8_t>(p_color_frame, p_color_frame + color_frame_size, 3);
-    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size -20, 1);
+    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size -10, 1);
 }
 
 

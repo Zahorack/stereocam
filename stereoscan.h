@@ -36,15 +36,22 @@ class Stereoscan {
 
     int filenumber = 0;
 
+    bool is_enabled = false;
+
 public:
+
 	Stereoscan(rs2::pipeline& pipe);
     ~Stereoscan();
+
+    void start();
 
     void initialize();
     void update();
     void process(FaceDetection faceDetection);
 
     void save();
+
+    void enable() { is_enabled = true;};
 };
 
 
