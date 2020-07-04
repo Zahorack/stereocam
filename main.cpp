@@ -18,12 +18,11 @@
 static int countConnectedCameras();
 static int getIndexOfFirstCameraWithResolution(int width, int height);
 
-
+static const int LOGS_NUM_PER_WARNING = 2;
 
 
 int main(int argc, char* argv[]) try
 {
-
 
     int device_counts = countConnectedCameras();
 
@@ -48,7 +47,11 @@ int main(int argc, char* argv[]) try
                 audioTrigger.clear(Events::Pass);
             }
             if (audioTrigger.check(Events::Warning)) {
-                stereoscan.update();
+                // Repeat capturing for better image and 3D models
+                for (int i = 0; i < LOGS_NUM_PER_WARNING; i++) {
+                    stereoscan.update();
+                }
+
                 audioTrigger.clear(Events::Warning);
             }
         }
@@ -69,28 +72,29 @@ int main(int argc, char* argv[]) try
             }
             if (audioTrigger.check(Events::Warning)) {
 
-                FaceDetection faceDetection;
-                int iterations = 10;
-                do {
-                    bool bSuccess = cap.read(frame);
+                // Repeat capturing for better image
+                for (int i = 0; i < LOGS_NUM_PER_WARNING; i++) {
+                    FaceDetection faceDetection;
+                    int iterations = 10;
+                    do {
+                        bool bSuccess = cap.read(frame);
 
-                    std::cout << "RGB capture\n";
-                    faceDetection.update(frame);
+                        std::cout << "RGB capture\n";
+                        faceDetection.update(frame);
 
-                } while (!faceDetection.available() && iterations--);
+                    } while (!faceDetection.available() && iterations--);
 
-                auto faces = faceDetection.crops(1.4, 1.3);
-
-                for (int i = 0; i < faces.size(); i++) {
-
-                    cv::Mat faceImage = frame(faces[i]);
-                    logger.updateRGB(faceImage);
+                    auto faces = faceDetection.crops(1.4, 1.3);
+                    for (int i = 0; i < faces.size(); i++) {
+                        cv::Mat faceImage = frame(faces[i]);
+                        logger.updateRGB(faceImage);
+                    }
                 }
+
                 audioTrigger.clear(Events::Warning);
             }
 
             //cv::imshow("frame", frame);
-            audioTrigger.clear(Events::Warning);
         }
     }
 

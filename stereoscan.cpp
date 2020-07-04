@@ -264,7 +264,7 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     const auto depth_frame_size = depth_frame.get_width() * depth_frame.get_height();
 
     revereseArray<uint8_t>(p_color_frame, p_color_frame + color_frame_size, 3);
-    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size -10, 1);
+    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size - 12, 1);
 }
 
 
