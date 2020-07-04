@@ -75,8 +75,6 @@ void Stereoscan::process(FaceDetection faceDetection) {
     rs2::depth_frame depth_frame = m_data.get_depth_frame();
 
 
- 
-
     auto color_mat = frame_to_mat(color_frame);
     auto depth_mat = frame_to_mat(depth_frame);
 
@@ -238,7 +236,7 @@ static void remove_background(rs2::video_frame& other_frame, const rs2::depth_fr
 }
 
 template<typename T>
-static void revereseArray(T* start, T* stop, int elemnetSize) {
+static void revereseArray(T* start, T* stop, int elemnetSize = 1) {
 
     T* head = start;
     T* tail = stop;
@@ -274,8 +272,8 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     const auto color_frame_size = width * height * color_bpp;
     const auto depth_frame_size = depth_frame.get_width() * depth_frame.get_height();
 
-    revereseArray<uint8_t>(p_color_frame+51, p_color_frame + color_frame_size, 3);
-    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size, 1);
+    revereseArray<uint8_t>(p_color_frame, p_color_frame + color_frame_size, 3);
+    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size -20, 1);
 }
 
 
