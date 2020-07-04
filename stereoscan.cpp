@@ -12,6 +12,7 @@ static bool profile_changed(const std::vector<rs2::stream_profile>& current, con
 static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_frame);
 
 
+
 Stereoscan::Stereoscan(rs2::pipeline& pipe) :
     m_pipeline(pipe),
     m_profile(m_pipeline.start()),
@@ -19,10 +20,20 @@ Stereoscan::Stereoscan(rs2::pipeline& pipe) :
     align_to(find_stream_to_align(m_profile.get_streams())),
     aligninig(align_to)
 {
+    auto profile = pipe.get_active_profile();
+    if (profile) {
+        std::cout << "Device OK";
+    }
+    else {
+        std::cout << "Device disconnected";
+    }
 
 }
 
-Stereoscan::~Stereoscan() {}
+Stereoscan::~Stereoscan()
+{
+    m_pipeline.stop();
+}
 
 
 
@@ -224,6 +235,25 @@ static void remove_background(rs2::video_frame& other_frame, const rs2::depth_fr
     }
 }
 
+template<typename T>
+static void revereseArray(T* start, T* stop, int elemnetSize) {
+
+    T* head = start;
+    T* tail = stop;
+
+
+    while (head < tail) {
+        T temp[elemnetSize];
+
+        std::memcpy(temp, head, elemnetSize);
+        std::memcpy(head, tail, elemnetSize);
+        std::memcpy(tail, temp, elemnetSize);
+
+        head += elemnetSize;
+        tail -= elemnetSize;
+    }
+
+}
 
 static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_frame)
 {
@@ -252,8 +282,20 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     uint8_t* color_buff = new uint8_t[color_frame_size];
     uint16_t* depth_buff= new uint16_t[depth_frame_size];
 
-    std::memcpy(color_buff, p_color_frame, color_frame_size);
-    std::memcpy(depth_buff, p_depth_frame_to_read, depth_frame_size);
+    //std::memcpy(color_buff, p_color_frame+50, color_frame_size);
+    //std::memcpy(depth_buff, p_depth_frame, depth_frame_size);
+
+    for (int i = 0; i < depth_frame_size; i++) {
+        depth_buff[i] = p_depth_frame[i];
+    }
+
+    for (int i = 0; i < color_frame_size; i++) {
+        color_buff[i] = p_color_frame[i+51];
+    }
+
+
+   //std::reverse(p_color_frame+50, p_color_frame + color_frame_size);
+   // std::reverse(p_depth_frame, p_depth_frame + depth_frame_size);
 
    int yc = 0;
 //#pragma omp parallel for schedule(dynamic) //Using OpenMP to try to parallelise the loop
@@ -267,10 +309,12 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
             // Calculate the offset in other frame's buffer to current pixel
             auto offset = depth_pixel_index * color_bpp;
 
-            p_depth_frame[depth_pixel_index] = depth_buff[depth_frame_size- depth_pixel_index];
+           // std::cout << "i1: " << depth_pixel_index << "  i2:  " << depth_frame_size - depth_pixel_index << std::endl;
+            p_depth_frame[depth_pixel_index] = depth_buff[depth_frame_size- depth_pixel_index ];
+            //p_depth_frame[depth_pixel_index] = depth_buff[depth_pixel_index];
             //p_color_frame[offset] = color_buff[color_frame_size - offset];
 
-            //std::memcpy(&p_depth_frame[depth_pixel_index], &depth_buff[depth_frame_size - depth_pixel_index], 2);
+           // std::memcpy(&p_8_depth_frame[depth_pixel_index], &depth_buff[depth_frame_size - depth_pixel_index], 2);
 
             std::memcpy(&p_color_frame[offset], &color_buff[color_frame_size - offset], color_bpp);
         }
@@ -279,6 +323,8 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     delete[] color_buff;
     delete[] depth_buff;
 }
+
+
 
 
 static bool profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev)
