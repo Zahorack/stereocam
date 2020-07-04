@@ -3,7 +3,7 @@
 //
 
 #include "stereoscan.h"
-
+#include "Logger.h"
 
 static void remove_background(rs2::video_frame& other, const rs2::depth_frame& depth_frame, float depth_scale, float clipping_dist, cv::Rect roi);
 static float get_depth_scale(rs2::device dev);
@@ -11,7 +11,7 @@ static rs2_stream find_stream_to_align(const std::vector<rs2::stream_profile>& s
 static bool profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev);
 static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_frame);
 
-
+static Logger logger;
 
 
 Stereoscan::Stereoscan(rs2::pipeline& pipe) :
@@ -43,7 +43,7 @@ Stereoscan::~Stereoscan()
 void Stereoscan::update()
 {
     FaceDetection faceDetection;
-
+    int iterations = 10;
     do {
         m_data = m_pipeline.wait_for_frames();
 
@@ -62,7 +62,7 @@ void Stereoscan::update()
         //cv::flip(color_mat, color_mat, -1);
         faceDetection.update(color_mat);
 
-    } while (!faceDetection.available());
+    } while (!faceDetection.available() && iterations--);
 
     process(faceDetection);
 }
@@ -110,22 +110,12 @@ void Stereoscan::process(FaceDetection faceDetection) {
         remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, faces[i]);
 
         //SAVING
-        rs2::pointcloud pc;
-        pc.map_to(other_frame);
-        rs2::points points = pc.calculate(aligned_depth_frame);
-
-        std::string filename = "faces";
-        std::stringstream ssf;
-        ssf << "faces/RGB/" << filenumber << ".ply";
-        points.export_to_ply(ssf.str(), color_frame);
+    
+        logger.update3D(other_frame, aligned_depth_frame);
 
         auto other_mat = frame_to_mat(other_frame);
-        std::stringstream ssfn;
-        ssfn << "faces/RGB/" << filenumber << ".jpg";
-        filename = ssfn.str();
-        cv::imwrite(filename, other_mat(faces[i]));
-        filenumber++;
-
+        cv::Mat faceImage = other_mat(faces[i]);
+        logger.updateRGB(faceImage);
 
         cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
         cv::Point pt2((faces[i].x + faces[i].width), (faces[i].y + faces[i].height));
@@ -133,7 +123,7 @@ void Stereoscan::process(FaceDetection faceDetection) {
     }
 
 
-    cv::imshow("image", color_mat);
+   // cv::imshow("image", color_mat);
 }
 
 

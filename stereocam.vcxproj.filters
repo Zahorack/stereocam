@@ -27,13 +27,13 @@
     <ClCompile Include="AudioTrigger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="rgbscan.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ThermalCamera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UsbScaner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -55,7 +55,7 @@
     <ClInclude Include="AudioTrigger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="rgbscan.h">
+    <ClInclude Include="Logger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

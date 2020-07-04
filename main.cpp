@@ -10,26 +10,20 @@
 
 #include "stereoscan.h"
 #include "AudioTrigger.h"
+#include "Logger.h"
 #include <windows.h>
 #include "cv-helpers.h"
 
 
-namespace Cameras {
-    enum Enum {
-        Stereo = 0,
-        RGB,
-
-        Size
-    };
-}
-
-Cameras::Enum camera_id = Cameras::Enum::RGB;
-
 static int countConnectedCameras();
 static int getIndexOfFirstCameraWithResolution(int width, int height);
 
+
+
+
 int main(int argc, char* argv[]) try
 {
+
 
     int device_counts = countConnectedCameras();
 
@@ -37,7 +31,7 @@ int main(int argc, char* argv[]) try
 
     // If there is Thermal camera and 2 intel relasense, than use only them 
     //TODO: In NUC relase use device_counts >=3
-    if (device_counts >= 4) {
+    if (device_counts >= 3) {
         rs2::pipeline pipe;
         Stereoscan stereoscan(pipe);
 
@@ -63,6 +57,7 @@ int main(int argc, char* argv[]) try
 
         cv::VideoCapture cap(getIndexOfFirstCameraWithResolution(480, 640));
         cv::Mat frame;
+        Logger logger;
 
         while (cv::waitKey(1) < 0)
         {
@@ -75,30 +70,27 @@ int main(int argc, char* argv[]) try
             if (audioTrigger.check(Events::Warning)) {
 
                 FaceDetection faceDetection;
+                int iterations = 10;
                 do {
                     bool bSuccess = cap.read(frame);
 
                     std::cout << "RGB capture\n";
                     faceDetection.update(frame);
 
-                } while (!faceDetection.available());
+                } while (!faceDetection.available() && iterations--);
 
                 auto faces = faceDetection.crops(1.4, 1.3);
 
                 for (int i = 0; i < faces.size(); i++) {
 
-                    std::string filename = "";
-                    static int filenumber = 0;
-                    std::stringstream ssfn;
-                    ssfn << "faces/RGB/" << filenumber << ".jpg";
-                    filename = ssfn.str();
-                    cv::imwrite(filename, frame(faces[i]));
-                    filenumber++;
+                    cv::Mat faceImage = frame(faces[i]);
+                    logger.updateRGB(faceImage);
                 }
                 audioTrigger.clear(Events::Warning);
             }
 
-            cv::imshow("frame", frame);
+            //cv::imshow("frame", frame);
+            audioTrigger.clear(Events::Warning);
         }
     }
 
