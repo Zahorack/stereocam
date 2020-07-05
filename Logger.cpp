@@ -46,8 +46,21 @@ Logger::Logger()
     m_date = today();
     m_time = now();
 
-    std::cout << "Logger begin on " << m_date << std::endl;
-    std::cout << "Logger begin at " << m_time << std::endl;
+    std::cout << "Thermal gate application started on " << m_date;
+    std::cout << "  at " << m_time << std::endl;
+
+
+    const std::string root = PATH;
+    CreateDirectoryA((root).c_str(), NULL);
+
+    const std::string rgb = "RGB";
+    CreateDirectoryA((PATH + rgb).c_str(), NULL);
+
+    const std::string model = "3D";
+    CreateDirectoryA((PATH + model).c_str(), NULL);
+
+    const std::string thermal = "THERMAL";
+    CreateDirectoryA((PATH + thermal).c_str(), NULL);
 
 }
 

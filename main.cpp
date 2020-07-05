@@ -23,6 +23,8 @@ static const int LOGS_NUM_PER_WARNING = 2;
 
 int main(int argc, char* argv[]) try
 {
+    std::cout << std::endl<<"make sure thermal camera is connected and FS256 application is runing..." << std::endl;
+
 
     int device_counts = countConnectedCameras();
 
@@ -129,7 +131,7 @@ static int countConnectedCameras() {
             device_counts++;
     }
     camera.release();
-    std::cout << "devices count : " << device_counts << std::endl;
+    std::cout << "Number of connected cameras: " << device_counts << std::endl;
 
     return device_counts;
 }

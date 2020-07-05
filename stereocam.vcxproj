@@ -23,6 +23,7 @@
     <ProjectGuid>{EF10EE74-55F3-4BA8-BAD7-A099512BA991}</ProjectGuid>
     <RootNamespace>stereocam</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>thermalgate</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
