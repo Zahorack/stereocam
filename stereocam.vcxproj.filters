@@ -36,6 +36,9 @@
     <ClCompile Include="Logger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SerialAudioTrigger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore">
@@ -56,6 +59,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Logger.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SerialAudioTrigger.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

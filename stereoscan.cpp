@@ -37,29 +37,35 @@ Stereoscan::~Stereoscan()
 }
 
 
-
-
-
 void Stereoscan::update()
 {
     FaceDetection faceDetection;
     int iterations = 10;
     do {
-        m_data = m_pipeline.wait_for_frames();
 
-        rs2::video_frame color_frame = m_data.get_color_frame();
-        rs2::depth_frame depth_frame = m_data.get_depth_frame();
+        for (int i = 0; i < FRAMES_PER_CAPTURE;) {
+            m_data[i] = m_pipeline.wait_for_frames();
+
+            static unsigned long long last_frame_number = 0;
+            if (m_data[i].get_frame_number() == last_frame_number)
+                continue;
+
+            last_frame_number = m_data[i].get_frame_number();
+            i++;
+
+
+        }
+
+        //m_data = m_pipeline.wait_for_frames();
+
+        rs2::video_frame color_frame = m_data[0].get_color_frame();
+        rs2::depth_frame depth_frame = m_data[0].get_depth_frame();
 
         /*Important USE only if camera is upside down*/
-        invert(color_frame, depth_frame);
+        //invert(color_frame, depth_frame);
         
-        static unsigned long long last_frame_number = 0;
-        if (m_data.get_frame_number() == last_frame_number)
-            continue;
-        last_frame_number = m_data.get_frame_number();
-
         auto color_mat = frame_to_mat(color_frame);
-        //cv::flip(color_mat, color_mat, -1);
+        cv::flip(color_mat, color_mat, -1);
         faceDetection.update(color_mat);
 
     } while (!faceDetection.available() && iterations--);
@@ -72,12 +78,6 @@ void Stereoscan::initialize() {
 }
 
 void Stereoscan::process(FaceDetection faceDetection) {
-    rs2::video_frame color_frame = m_data.get_color_frame();
-    rs2::depth_frame depth_frame = m_data.get_depth_frame();
-
-
-    auto color_mat = frame_to_mat(color_frame);
-    auto depth_mat = frame_to_mat(depth_frame);
 
     if (profile_changed(m_pipeline.get_active_profile().get_streams(), m_profile.get_streams())) {
         //If the profile was changed, update the align object, and also get the new device's depth scale
@@ -87,43 +87,54 @@ void Stereoscan::process(FaceDetection faceDetection) {
         depth_scale = get_depth_scale(m_profile.get_device());
     }
 
+
     auto faces = faceDetection.crops(1.4, 1.3);
     auto centers = faceDetection.centers();
 
 
-    for (auto i = 0; i < faces.size(); i++) {
+    for (auto i = 0; i < faces.size() && i < FRAMES_PER_CAPTURE; i++) {
 
         std::cout << "face: " << i <<std::endl;
 
-        auto processed = aligninig.process(m_data);
 
+        auto processed = aligninig.process(m_data[i]);
         rs2::video_frame other_frame = processed.first(align_to);
         rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
+
+
+
+        /*Invert afterr aligning*/
+        invert(other_frame, aligned_depth_frame);
+
+        auto other_mat = frame_to_mat(other_frame);
+        cv::Mat faceImage = other_mat(faces[i]);
+        logger.updateRGB(other_mat, i);
+        logger.updateRGB_FACES(faceImage, i);
 
         //If one of them is unavailable, continue iteration
         if (!aligned_depth_frame || !other_frame) {
             continue;
         }
 
-        auto center_distance = depth_frame.get_distance(centers[i].x, centers[i].y);
+        auto center_distance = aligned_depth_frame.get_distance(centers[i].x, centers[i].y);
         float depth_clipping_distance = center_distance + static_cast<float>(0.1);
+        logger.update3D(other_frame, aligned_depth_frame, i);
         remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, faces[i]);
 
         //SAVING
-    
-        logger.update3D(other_frame, aligned_depth_frame);
+        logger.update3D_FACES(other_frame, aligned_depth_frame, i);
 
-        auto other_mat = frame_to_mat(other_frame);
-        cv::Mat faceImage = other_mat(faces[i]);
-        logger.updateRGB(faceImage);
 
-        cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
+       /* cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
         cv::Point pt2((faces[i].x + faces[i].width), (faces[i].y + faces[i].height));
+
+        auto color_mat = frame_to_mat(other_frame);
         rectangle(color_mat, pt1, pt2, cv::Scalar(0, 255, 0), 2, 8, 0);
+        cv::imshow("image", color_mat);*/
     }
 
 
-   // cv::imshow("image", color_mat);
+
 }
 
 
@@ -264,10 +275,8 @@ static void invert(rs2::video_frame& color_frame, const rs2::depth_frame& depth_
     const auto depth_frame_size = depth_frame.get_width() * depth_frame.get_height();
 
     revereseArray<uint8_t>(p_color_frame, p_color_frame + color_frame_size, 3);
-    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size - 12, 1);
+    revereseArray<uint16_t>(p_depth_frame, p_depth_frame + depth_frame_size, 1);
 }
-
-
 
 
 static bool profile_changed(const std::vector<rs2::stream_profile>& current, const std::vector<rs2::stream_profile>& prev)

@@ -8,7 +8,7 @@
 #include <opencv2/opencv.hpp> 
 #include <librealsense2/rs.hpp>
 
-static const std::string PATH = "C:\\data\\";
+static const std::string PATH = "E:\\data\\";
 
 class Logger {
 
@@ -20,7 +20,9 @@ public:
 	~Logger();
 
 
-	void updateRGB(cv::Mat &frame);
-	void update3D(rs2::video_frame& color, rs2::depth_frame& depth);
+	void updateRGB(cv::Mat &frame, int num);
+	void updateRGB_FACES(cv::Mat& frame, int num);
+	void update3D(rs2::video_frame& color, rs2::depth_frame& depth, int num);
+	void update3D_FACES(rs2::video_frame& color, rs2::depth_frame& depth, int num);
 
 };

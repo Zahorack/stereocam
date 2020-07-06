@@ -48,7 +48,7 @@ std::vector<cv::Rect> FaceDetection::crops(double scale, double height_scale) {
 
 	if (m_faces.size())
 		for (auto ic = 0; ic < m_faces.size(); ic++) {
-			std::cout << "roi: " << ic << std::endl;
+			//std::cout << "roi: " << ic << std::endl;
 			cv::Point center_point(m_faces[ic].x + m_faces[ic].width / 2, m_faces[ic].y + m_faces[ic].height / 2);
 
 			cv::Rect roi_a;
@@ -57,10 +57,10 @@ std::vector<cv::Rect> FaceDetection::crops(double scale, double height_scale) {
 			roi_a.x = cvRound(center_point.x - roi_a.width / 2);
 			roi_a.y = cvRound(center_point.y - roi_a.height / 2);
 
-			std::cout << "roi_a: " << roi_a << std::endl;
+			//std::cout << "roi_a: " << roi_a << std::endl;
 			roi.push_back(roi_a);
 
-			std::cout << "roi: " << roi[ic] << std::endl;
+			//std::cout << "roi: " << roi[ic] << std::endl;
 
 			if ((roi[ic].x + roi[ic].width) >= m_frame.cols)
 				roi[ic].width = m_frame.cols - roi[ic].x;

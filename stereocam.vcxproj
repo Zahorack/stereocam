@@ -151,6 +151,7 @@
     <ClCompile Include="FaceDetection.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SerialAudioTrigger.cpp" />
     <ClCompile Include="stereoscan.cpp" />
     <ClCompile Include="ThermalCamera.cpp" />
     <ClCompile Include="UsbScaner.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="cv-helpers.h" />
     <ClInclude Include="FaceDetection.h" />
     <ClInclude Include="Logger.h" />
+    <ClInclude Include="SerialAudioTrigger.h" />
     <ClInclude Include="stereoscan.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

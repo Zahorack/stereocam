@@ -23,10 +23,11 @@
 
 #include "FaceDetection.h"
 
+const int FRAMES_PER_CAPTURE = 3;
 
 class Stereoscan {
 
-	rs2::frameset m_data;
+	rs2::frameset m_data[FRAMES_PER_CAPTURE];
     rs2::pipeline m_pipeline;
     rs2::pipeline_profile m_profile;
 

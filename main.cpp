@@ -10,6 +10,7 @@
 
 #include "stereoscan.h"
 #include "AudioTrigger.h"
+#include "SerialAudioTrigger.h"
 #include "Logger.h"
 #include <windows.h>
 #include "cv-helpers.h"
@@ -18,21 +19,20 @@
 static int countConnectedCameras();
 static int getIndexOfFirstCameraWithResolution(int width, int height);
 
-static const int LOGS_NUM_PER_WARNING = 2;
+static const int LOGS_NUM_PER_WARNING = 1;
 
 
 int main(int argc, char* argv[]) try
 {
     std::cout << std::endl<<"make sure thermal camera is connected and FS256 application is runing..." << std::endl;
 
-
     int device_counts = countConnectedCameras();
 
-    AudioTrigger audioTrigger;
+    SerialAudioTrigger audioTrigger;
 
     // If there is Thermal camera and 2 intel relasense, than use only them 
     //TODO: In NUC relase use device_counts >=3
-    if (device_counts >= 3) {
+    if (device_counts >= 2) {
         rs2::pipeline pipe;
         Stereoscan stereoscan(pipe);
 
@@ -46,6 +46,8 @@ int main(int argc, char* argv[]) try
 
             if (audioTrigger.check(Events::Pass)) {
                 std::cout << "Passing\n";
+                /*E*/
+                //stereoscan.update();
                 audioTrigger.clear(Events::Pass);
             }
             if (audioTrigger.check(Events::Warning)) {
@@ -89,13 +91,13 @@ int main(int argc, char* argv[]) try
                     auto faces = faceDetection.crops(1.4, 1.3);
                     for (int i = 0; i < faces.size(); i++) {
                         cv::Mat faceImage = frame(faces[i]);
-                        logger.updateRGB(faceImage);
+                        logger.updateRGB(frame, i);
+                        logger.updateRGB_FACES(faceImage, i);
                     }
                 }
 
                 audioTrigger.clear(Events::Warning);
             }
-
             //cv::imshow("frame", frame);
         }
     }
@@ -115,7 +117,6 @@ catch (const std::exception & e)
     std::cerr << e.what() << std::endl;
     return EXIT_FAILURE;
 }
-
 
 
 
