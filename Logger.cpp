@@ -110,6 +110,7 @@ void Logger::update3D(rs2::video_frame& color, rs2::depth_frame& depth, int num)
 
     std::stringstream ssf;
     ssf << PATH << "3D\\"<< today() <<"\\"<< now() << "_" << num << ".ply";
+    std::cout << ssf.str() << std::endl;
     points.export_to_ply(ssf.str(), color);
 }
 
@@ -124,5 +125,6 @@ void Logger::update3D_FACES(rs2::video_frame& color, rs2::depth_frame& depth, in
 
     std::stringstream ssf;
     ssf << PATH << "3D_FACES\\" << today() << "\\" << now() << "_" << num << ".ply";
+    std::cout << ssf.str() << std::endl;
     points.export_to_ply(ssf.str(), color);
 }

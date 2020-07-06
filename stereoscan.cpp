@@ -41,34 +41,28 @@ void Stereoscan::update()
 {
     FaceDetection faceDetection;
     int iterations = 10;
-    do {
 
-        for (int i = 0; i < FRAMES_PER_CAPTURE;) {
-            m_data[i] = m_pipeline.wait_for_frames();
+    for (int i = 0; i < FRAMES_PER_CAPTURE;) {
+        m_data[i] = m_pipeline.wait_for_frames();
 
-            static unsigned long long last_frame_number = 0;
-            if (m_data[i].get_frame_number() == last_frame_number)
-                continue;
+        static unsigned long long last_frame_number = 0;
+        if (m_data[i].get_frame_number() == last_frame_number)
+            continue;
+        last_frame_number = m_data[i].get_frame_number();
 
-            last_frame_number = m_data[i].get_frame_number();
-            i++;
+        i++;
+    }
+    //m_data = m_pipeline.wait_for_frames();
+
+    rs2::video_frame color_frame = m_data[0].get_color_frame();
+    rs2::depth_frame depth_frame = m_data[0].get_depth_frame();
 
 
-        }
-
-        //m_data = m_pipeline.wait_for_frames();
-
-        rs2::video_frame color_frame = m_data[0].get_color_frame();
-        rs2::depth_frame depth_frame = m_data[0].get_depth_frame();
-
-        /*Important USE only if camera is upside down*/
-        //invert(color_frame, depth_frame);
         
-        auto color_mat = frame_to_mat(color_frame);
-        cv::flip(color_mat, color_mat, -1);
-        faceDetection.update(color_mat);
+    auto color_mat = frame_to_mat(color_frame);
+    cv::flip(color_mat, color_mat, -1);
+    faceDetection.update(color_mat);
 
-    } while (!faceDetection.available() && iterations--);
 
     process(faceDetection);
 }
@@ -91,49 +85,61 @@ void Stereoscan::process(FaceDetection faceDetection) {
     auto faces = faceDetection.crops(1.4, 1.3);
     auto centers = faceDetection.centers();
 
+    if (faceDetection.available()) {
+        for (auto i = 0; i < faces.size() && i < FRAMES_PER_CAPTURE; i++) {
 
-    for (auto i = 0; i < faces.size() && i < FRAMES_PER_CAPTURE; i++) {
+            std::cout << "face: " << i << std::endl;
 
-        std::cout << "face: " << i <<std::endl;
+            auto processed = aligninig.process(m_data[i]);
+            rs2::video_frame other_frame = processed.first(align_to);
+            rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
 
 
-        auto processed = aligninig.process(m_data[i]);
+            /*Invert afterr aligning*/
+            invert(other_frame, aligned_depth_frame);
+
+            auto other_mat = frame_to_mat(other_frame);
+            cv::Mat faceImage = other_mat(faces[i]);
+            logger.updateRGB(other_mat, i);
+            logger.updateRGB_FACES(faceImage, i);
+
+            //If one of them is unavailable, continue iteration
+            if (!aligned_depth_frame || !other_frame) {
+                continue;
+            }
+
+            auto center_distance = aligned_depth_frame.get_distance(centers[i].x, centers[i].y);
+            float depth_clipping_distance = center_distance + static_cast<float>(0.1);
+            logger.update3D(other_frame, aligned_depth_frame, i);
+            remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, faces[i]);
+
+            //SAVING
+            logger.update3D_FACES(other_frame, aligned_depth_frame, i);
+
+
+            /* cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
+             cv::Point pt2((faces[i].x + faces[i].width), (faces[i].y + faces[i].height));
+
+             auto color_mat = frame_to_mat(other_frame);
+             rectangle(color_mat, pt1, pt2, cv::Scalar(0, 255, 0), 2, 8, 0);
+             cv::imshow("image", color_mat);*/
+        }
+    }
+    else {
+        auto processed = aligninig.process(m_data[0]);
         rs2::video_frame other_frame = processed.first(align_to);
         rs2::depth_frame aligned_depth_frame = processed.get_depth_frame();
-
-
 
         /*Invert afterr aligning*/
         invert(other_frame, aligned_depth_frame);
 
         auto other_mat = frame_to_mat(other_frame);
-        cv::Mat faceImage = other_mat(faces[i]);
-        logger.updateRGB(other_mat, i);
-        logger.updateRGB_FACES(faceImage, i);
+        logger.updateRGB(other_mat, 0);
 
-        //If one of them is unavailable, continue iteration
-        if (!aligned_depth_frame || !other_frame) {
-            continue;
-        }
-
-        auto center_distance = aligned_depth_frame.get_distance(centers[i].x, centers[i].y);
-        float depth_clipping_distance = center_distance + static_cast<float>(0.1);
-        logger.update3D(other_frame, aligned_depth_frame, i);
-        remove_background(other_frame, aligned_depth_frame, depth_scale, depth_clipping_distance, faces[i]);
-
-        //SAVING
-        logger.update3D_FACES(other_frame, aligned_depth_frame, i);
-
-
-       /* cv::Point pt1(faces[i].x, faces[i].y); // Display detected faces on main window
-        cv::Point pt2((faces[i].x + faces[i].width), (faces[i].y + faces[i].height));
-
-        auto color_mat = frame_to_mat(other_frame);
-        rectangle(color_mat, pt1, pt2, cv::Scalar(0, 255, 0), 2, 8, 0);
-        cv::imshow("image", color_mat);*/
+        logger.update3D(other_frame, aligned_depth_frame, 0);
     }
 
-
+    std::cout << "Saving done\n";
 
 }
 

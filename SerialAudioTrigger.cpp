@@ -12,7 +12,7 @@ static HANDLE serialHandle;
 
 static bool is_initialised = false;
 static const double AudioPeakLimit = 5;
-static const long MaxEventPeriodSec = 2;
+static const long MaxEventPeriodSec = 5;
 
 #include <ctime>
 

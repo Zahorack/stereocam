@@ -79,21 +79,20 @@ int main(int argc, char* argv[]) try
                 // Repeat capturing for better image
                 for (int i = 0; i < LOGS_NUM_PER_WARNING; i++) {
                     FaceDetection faceDetection;
-                    int iterations = 10;
-                    do {
-                        bool bSuccess = cap.read(frame);
 
-                        std::cout << "RGB capture\n";
-                        faceDetection.update(frame);
+                    bool bSuccess = cap.read(frame);
 
-                    } while (!faceDetection.available() && iterations--);
+                    std::cout << "RGB capture\n";
+                    faceDetection.update(frame);
 
-                    auto faces = faceDetection.crops(1.4, 1.3);
-                    for (int i = 0; i < faces.size(); i++) {
-                        cv::Mat faceImage = frame(faces[i]);
-                        logger.updateRGB(frame, i);
-                        logger.updateRGB_FACES(faceImage, i);
+                    if (faceDetection.available()) {
+                        auto faces = faceDetection.crops(1.4, 1.3);
+                        for (int i = 0; i < faces.size(); i++) {
+                            cv::Mat faceImage = frame(faces[i]);
+                            logger.updateRGB_FACES(faceImage, i);
+                        }
                     }
+                    logger.updateRGB(frame, i);
                 }
 
                 audioTrigger.clear(Events::Warning);
