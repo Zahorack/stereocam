@@ -39,6 +39,12 @@
     <ClCompile Include="SerialAudioTrigger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GinaInterface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="base64.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore">
@@ -62,6 +68,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="SerialAudioTrigger.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GinaInterface.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="base64.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

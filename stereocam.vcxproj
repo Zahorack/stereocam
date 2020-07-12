@@ -148,7 +148,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AudioTrigger.cpp" />
+    <ClCompile Include="base64.cpp" />
     <ClCompile Include="FaceDetection.cpp" />
+    <ClCompile Include="GinaInterface.cpp" />
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="SerialAudioTrigger.cpp" />
@@ -161,8 +163,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AudioTrigger.h" />
+    <ClInclude Include="base64.h" />
     <ClInclude Include="cv-helpers.h" />
     <ClInclude Include="FaceDetection.h" />
+    <ClInclude Include="GinaInterface.h" />
     <ClInclude Include="Logger.h" />
     <ClInclude Include="SerialAudioTrigger.h" />
     <ClInclude Include="stereoscan.h" />
