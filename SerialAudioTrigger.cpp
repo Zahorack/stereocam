@@ -13,6 +13,7 @@ static HANDLE serialHandle;
 static bool is_initialised = false;
 static const double AudioPeakLimit = 5;
 static const long MaxEventPeriodSec = 5;
+static const int PING_PERIOD = 2;
 
 #include <ctime>
 
@@ -62,6 +63,15 @@ SerialAudioTrigger::~SerialAudioTrigger()
 
 void SerialAudioTrigger::update()
 {
+
+    static int last_ping = getSeconds();
+    if (getSeconds() > (last_ping + PING_PERIOD)) {
+        char ping = 'p';
+        LPDWORD written = 0;
+        WriteFile(serialHandle, &ping, 1, written, NULL);
+        last_ping = getSeconds();
+    }
+
     DWORD nRead;
     char mark;
     ReadFile(serialHandle, &mark, 1, &nRead, NULL);

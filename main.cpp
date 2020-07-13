@@ -27,27 +27,20 @@ int main(int argc, char* argv[]) try
 {
 
 
-    std::string encoded_png;
+    /*std::string encoded_png;
     cv::Mat img = cv::imread("browser.png"); // Load an image here
 
     std::vector<uchar> buf;
     cv::imencode(".png", img, buf);
-    auto base64_png = reinterpret_cast<const unsigned char*>(buf.data());
+    auto base64_png = reinterpret_cast<const unsigned char*>(buf.data());*/
 
     //encoded_png = "data:image/jpeg;base64," + base64_encode(base64_png, buf.size());
-
     //std::cout << encoded_png;
 
-    std::string str(buf.begin(), buf.end());
+    /*std::string str(buf.begin(), buf.end());
     std::string out;
     Base64::Encode(str, &out);
-
-    std::cout << out;
-
-
-
-    //std::ifstream image("browser.png");
-    //std::string str((std::istreambuf_iterator<char>(image)), std::istreambuf_iterator<char>());
+    std::cout << out;*/
 
 
 
@@ -75,6 +68,9 @@ int main(int argc, char* argv[]) try
                 std::cout << "Passing\n";
                 /*E*/
                 //stereoscan.update();
+
+                //just becouse i want crash application as soon as possible if 3D cam is disconnected
+                pipe.wait_for_frames();
                 audioTrigger.clear(Events::Pass);
             }
             if (audioTrigger.check(Events::Warning)) {
